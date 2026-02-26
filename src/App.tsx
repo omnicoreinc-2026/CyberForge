@@ -5,6 +5,9 @@ import { ReconPage } from '@/pages/recon';
 import { OsintPage } from '@/pages/osint';
 import { VulnPage } from '@/pages/vuln';
 import { SettingsPage } from '@/components/settings/settings-page';
+import { LogsPage } from '@/pages/logs';
+import { AIPage } from "@/pages/ai";
+import { ThreatPage } from "@/pages/threat";
 
 function PlaceholderPage({ name }: { name: string }) {
   return (
@@ -23,10 +26,10 @@ export function App() {
         <Route path="recon" element={<ReconPage />} />
         <Route path="osint" element={<OsintPage />} />
         <Route path="vuln" element={<VulnPage />} />
-        <Route path="threat" element={<PlaceholderPage name="Threat Intelligence" />} />
-        <Route path="logs" element={<PlaceholderPage name="Log Analyzer" />} />
+        <Route path="threat" element={<ThreatPage />} />
+        <Route path="logs" element={<LogsPage />} />
         <Route path="reports" element={<PlaceholderPage name="Reports" />} />
-        <Route path="ai" element={<PlaceholderPage name="AI Assistant" />} />
+        <Route path="ai" element={<AIPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
