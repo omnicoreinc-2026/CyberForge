@@ -51,7 +51,7 @@ function ApiKeysStep({ onNext, onBack, onSkip }: StepProps) {
           await fetch('http://localhost:8008/api/settings/api-keys', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ service, api_key: key }),
+            body: JSON.stringify({ service, key }),
           });
         }
       } catch {
@@ -111,7 +111,7 @@ function AiStep({ onNext, onBack }: StepProps) {
       await fetch('http://localhost:8008/api/settings/app', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_provider: provider }),
+        body: JSON.stringify({ key: 'ai_provider', value: provider }),
       });
     } catch {
       // Settings page can handle retries

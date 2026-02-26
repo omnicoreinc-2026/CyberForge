@@ -29,7 +29,7 @@ export function TechStackPanel() {
     if (!target.trim()) return;
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<TechStackResponse>('/api/recon/techstack', { target: target.trim() });
+      const data = await ApiClient.post<TechStackResponse>('/api/recon/tech', { target: target.trim() });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Tech stack detection failed'); setStatus('error');

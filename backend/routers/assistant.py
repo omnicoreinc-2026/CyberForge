@@ -63,6 +63,12 @@ async def chat(request: ChatRequest):
     try:
         provider = await ai_service.get_provider()
 
+        if not provider.is_configured:
+            raise HTTPException(
+                status_code=503,
+                detail="AI provider is not configured. Please add an API key in Settings.",
+            )
+
         if request.stream:
             result = await ai_service.chat(messages, stream=True)
             return StreamingResponse(
@@ -82,6 +88,8 @@ async def chat(request: ChatRequest):
             model=provider.get_model_name(),
         )
 
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.exception("Chat request failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -99,11 +107,20 @@ async def analyze(request: AnalysisRequest) -> AnalysisResponse:
 
     try:
         provider = await ai_service.get_provider()
+
+        if not provider.is_configured:
+            raise HTTPException(
+                status_code=503,
+                detail="AI provider is not configured. Please add an API key in Settings.",
+            )
+
         result = await ai_service.analyze(request.content, request.task)
         return AnalysisResponse(
             analysis=result,
             model=provider.get_model_name(),
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.exception("Analysis request failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc

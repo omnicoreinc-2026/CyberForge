@@ -67,11 +67,23 @@ async def header_analysis(request: ScanRequest) -> dict[str, Any]:
     service = _get_service()
     scan_id = str(uuid4())
     results = await service.run_header_analysis(url, scan_id)
+    headers_list = [r.model_dump() for r in results]
+    # Compute grade from pass/fail ratio
+    passes = sum(1 for h in headers_list if h.get("status") == "pass")
+    total_h = len(headers_list) or 1
+    ratio = passes / total_h
+    grade = "A+" if ratio >= 0.9 else "A" if ratio >= 0.8 else "B" if ratio >= 0.6 else "C" if ratio >= 0.4 else "D" if ratio >= 0.2 else "F"
+    # Match frontend HeaderAnalysisResponse: {url, grade, headers, score}
     return {
         "scan_id": scan_id,
-        "target": url,
-        "results": [r.model_dump() for r in results],
-        "count": len(results),
+        "url": url,
+        "grade": grade,
+        "score": round(ratio * 100),
+        "headers": [
+            {"name": h.get("header", ""), "value": h.get("value", ""),
+             "status": h.get("status", "warning"), "description": h.get("description", "")}
+            for h in headers_list
+        ],
     }
 
 
@@ -84,7 +96,25 @@ async def ssl_check(request: SslCheckRequest) -> dict[str, Any]:
     service = _get_service()
     scan_id = str(uuid4())
     result = await service.run_ssl_check(hostname, request.port, scan_id)
-    return {"scan_id": scan_id, "target": hostname, "result": result.model_dump()}
+    data = result.model_dump()
+    # Match frontend SslCheckResponse: {hostname, grade, isValid, certificate, protocols, cipher, issues}
+    return {
+        "scan_id": scan_id,
+        "hostname": hostname,
+        "grade": data.get("grade", "B"),
+        "isValid": data.get("valid", False),
+        "certificate": {
+            "issuer": data.get("issuer", ""),
+            "subject": data.get("subject", ""),
+            "validFrom": data.get("not_before", ""),
+            "validTo": data.get("expires", data.get("not_after", "")),
+            "serialNumber": data.get("serial_number", ""),
+            "signatureAlgorithm": data.get("signature_algorithm", ""),
+        },
+        "protocols": [{"name": data.get("protocol", ""), "supported": True}],
+        "cipher": data.get("cipher", ""),
+        "issues": data.get("issues", []),
+    }
 
 
 @router.post("/cve", summary="CVE lookup")
@@ -94,11 +124,12 @@ async def cve_search(request: CveSearchRequest) -> dict[str, Any]:
     service = _get_service()
     scan_id = str(uuid4())
     results = await service.run_cve_search(keyword, scan_id)
+    # Match frontend CveLookupResponse: {query, total, results}
     return {
         "scan_id": scan_id,
-        "keyword": keyword,
+        "query": keyword,
+        "total": len(results),
         "results": [r.model_dump() for r in results],
-        "count": len(results),
     }
 
 
@@ -110,11 +141,14 @@ async def dependency_check(request: DependencyCheckRequest) -> dict[str, Any]:
     results = await service.run_dependency_check(
         request.content, request.file_type, scan_id,
     )
+    packages = [r.model_dump() for r in results]
+    # Match frontend DependencyCheckResponse: {filename, totalPackages, vulnerableCount, packages}
     return {
         "scan_id": scan_id,
-        "file_type": request.file_type,
-        "results": [r.model_dump() for r in results],
-        "count": len(results),
+        "filename": f"{request.file_type}.txt",
+        "totalPackages": len(request.content.strip().splitlines()),
+        "vulnerableCount": len(packages),
+        "packages": packages,
     }
 
 

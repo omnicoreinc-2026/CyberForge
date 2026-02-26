@@ -31,7 +31,9 @@ export function VirusTotalPanel() {
     if (!target.trim()) return;
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<VtResponse>('/api/osint/virustotal', { target: target.trim() });
+      const t = target.trim();
+      const target_type = t.match(/^[\d.]+$/) ? 'ip' : t.match(/^[a-f0-9]{32,}$/i) ? 'hash' : t.includes('/') ? 'url' : 'domain';
+      const data = await ApiClient.post<VtResponse>('/api/osint/virustotal', { target: t, target_type });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'VirusTotal scan failed'); setStatus('error');

@@ -34,7 +34,13 @@ _service = ReconService()
 class PortScanRequest(BaseModel):
     """Request body for port scanning."""
     target: str = Field(..., min_length=1, max_length=253)
-    ports: str = Field(default="1-1000", max_length=100)
+    ports: str | None = Field(default=None, max_length=100)
+    portRange: str | None = Field(default=None, max_length=100, alias="portRange")
+
+    @property
+    def resolved_ports(self) -> str:
+        """Accept either 'ports' or 'portRange' from the frontend."""
+        return self.portRange or self.ports or "1-1000"
 
 
 @router.post("/subdomains", summary="Enumerate subdomains")
@@ -49,8 +55,8 @@ async def subdomain_scan(request: ScanRequest) -> dict[str, Any]:
     return {
         "scan_id": scan_id,
         "target": domain,
-        "results": [r.model_dump() for r in results],
-        "count": len(results),
+        "subdomains": [r.model_dump() for r in results],
+        "total": len(results),
     }
 
 
@@ -62,12 +68,15 @@ async def port_scan(request: PortScanRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="Invalid target (IP or domain required)")
     scan_id = str(uuid4())
     emitter = ProgressEmitter(manager, scan_id)
-    results = await _service.run_port_scan(target, request.ports, scan_id, emitter)
+    results = await _service.run_port_scan(target, request.resolved_ports, scan_id, emitter)
+    open_ports = [r for r in results if r.state == "open"]
     return {
         "scan_id": scan_id,
         "target": target,
-        "results": [r.model_dump() for r in results],
-        "count": len(results),
+        "portRange": request.ports,
+        "ports": [r.model_dump() for r in results],
+        "total": len(results),
+        "openPorts": len(open_ports),
     }
 
 
@@ -78,7 +87,21 @@ async def whois_lookup(request: ScanRequest) -> dict[str, Any]:
     if not validate_domain(domain):
         raise HTTPException(status_code=400, detail="Invalid domain name")
     result = await _service.run_whois(domain)
-    return {"target": domain, "result": result.model_dump()}
+    data = result.model_dump()
+    # Add camelCase aliases expected by the frontend
+    data["createdDate"] = data.get("creation_date", "")
+    data["expiresDate"] = data.get("expiration_date", "")
+    data["updatedDate"] = data.get("updated_date", "")
+    data["nameServers"] = data.get("name_servers", [])
+    data["registrant"] = data.get("registrant", "")
+    # Build fields array for the frontend WhoisResponse type
+    data["fields"] = [
+        {"label": k.replace("_", " ").title(), "value": str(v)[:200]}
+        for k, v in data.items()
+        if k not in ("raw", "fields", "createdDate", "expiresDate", "updatedDate", "nameServers")
+        and v and not isinstance(v, (dict, list))
+    ]
+    return {"target": domain, "result": data}
 
 
 @router.post("/dns", summary="DNS analysis")
@@ -88,10 +111,15 @@ async def dns_analysis(request: ScanRequest) -> dict[str, Any]:
     if not validate_domain(domain):
         raise HTTPException(status_code=400, detail="Invalid domain name")
     results = await _service.run_dns_analysis(domain)
+    records = []
+    for r in results:
+        d = r.model_dump()
+        d["type"] = d.pop("record_type", d.get("type", ""))
+        records.append(d)
     return {
         "target": domain,
-        "results": [r.model_dump() for r in results],
-        "count": len(results),
+        "domain": domain,
+        "records": records,
     }
 
 
@@ -103,10 +131,15 @@ async def tech_fingerprint(request: ScanRequest) -> dict[str, Any]:
     if not validate_url(url):
         raise HTTPException(status_code=400, detail="Invalid URL")
     results = await _service.run_tech_fingerprint(url)
+    technologies = []
+    for r in results:
+        d = r.model_dump()
+        d["name"] = d.pop("technology", d.get("name", ""))
+        technologies.append(d)
     return {
         "target": url,
-        "results": [r.model_dump() for r in results],
-        "count": len(results),
+        "url": url,
+        "technologies": technologies,
     }
 
 

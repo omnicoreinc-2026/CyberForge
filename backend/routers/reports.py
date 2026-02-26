@@ -95,6 +95,9 @@ async def download_markdown(report_id: str) -> PlainTextResponse:
         md = await report_service.generate_markdown(report_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Markdown generation failed")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     return PlainTextResponse(
         content=md,
         media_type="text/markdown",

@@ -31,7 +31,7 @@ export function BreachLookupPanel() {
     if (!target.trim()) return;
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<BreachResponse>('/api/osint/breaches', { target: target.trim() });
+      const data = await ApiClient.post<BreachResponse>('/api/osint/hibp', { target: target.trim(), target_type: target.includes('@') ? 'email' : 'domain' });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Breach lookup failed'); setStatus('error');

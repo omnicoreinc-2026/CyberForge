@@ -86,21 +86,48 @@ def render_markdown(report_data: dict) -> str:
             lines.append(f"- **Severity:** {scan.get('severity', 'info')}")
             lines.append(f"- **Date:** {scan.get('created_at', 'N/A')}")
             results = scan.get("results", [])
-            lines.append(f"- **Findings:** {len(results)}")
-            lines.append("")
-            if results:
-                lines.append("| # | Finding | Severity |")
-                lines.append("|---|---------|----------|")
-                for idx, finding in enumerate(results[:20], 1):
-                    if isinstance(finding, dict):
-                        name = finding.get("name", finding.get("title", finding.get("host", str(finding)[:50])))
-                        fsev = finding.get("severity", finding.get("risk", "info"))
-                    else:
-                        name = str(finding)[:50]
-                        fsev = "info"
-                    lines.append(f"| {idx} | {name} | {fsev} |")
-                if len(results) > 20:
-                    lines.append(f"| ... | *{len(results) - 20} more findings* | |")
+            # Normalize results: dicts get rendered as key-value summaries
+            if isinstance(results, dict):
+                findings_count = results.get("total_entries", results.get("anomaly_count", len(results)))
+                lines.append(f"- **Findings:** {findings_count}")
+                lines.append("")
+                # Render dict results as a summary table
+                anomalies = results.get("anomalies", [])
+                if anomalies and isinstance(anomalies, list):
+                    lines.append("| # | Finding | Severity |")
+                    lines.append("|---|---------|----------|")
+                    for idx, anom in enumerate(anomalies[:20], 1):
+                        if isinstance(anom, dict):
+                            reason = anom.get("reason", "Unknown")[:60]
+                            asev = anom.get("severity", "info")
+                        else:
+                            reason = str(anom)[:60]
+                            asev = "info"
+                        lines.append(f"| {idx} | {reason} | {asev} |")
+                    if len(anomalies) > 20:
+                        lines.append(f"| ... | *{len(anomalies) - 20} more findings* | |")
+                    lines.append("")
+                else:
+                    for k, v in list(results.items())[:10]:
+                        if k not in ("anomalies", "statistics"):
+                            lines.append(f"- **{k}:** {v}")
+                    lines.append("")
+            else:
+                lines.append(f"- **Findings:** {len(results)}")
+                lines.append("")
+                if results:
+                    lines.append("| # | Finding | Severity |")
+                    lines.append("|---|---------|----------|")
+                    for idx, finding in enumerate(results[:20], 1):
+                        if isinstance(finding, dict):
+                            name = finding.get("name", finding.get("title", finding.get("host", str(finding)[:50])))
+                            fsev = finding.get("severity", finding.get("risk", "info"))
+                        else:
+                            name = str(finding)[:50]
+                            fsev = "info"
+                        lines.append(f"| {idx} | {name} | {fsev} |")
+                    if len(results) > 20:
+                        lines.append(f"| ... | *{len(results) - 20} more findings* | |")
                 lines.append("")
 
     # Recommendations

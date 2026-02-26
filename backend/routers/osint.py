@@ -59,7 +59,23 @@ async def shodan_lookup(request: ScanRequest) -> dict[str, Any]:
     service = _get_service()
     scan_id = str(uuid4())
     result = await service.run_shodan_lookup(target, scan_id)
-    return {"scan_id": scan_id, "target": target, "result": result.model_dump()}
+    data = result.model_dump()
+    # Flatten to match frontend ShodanResponse: {host, ports, services, vulnerabilities}
+    return {
+        "scan_id": scan_id,
+        "host": {
+            "ip": data.get("ip", target),
+            "org": data.get("org", ""),
+            "os": data.get("os", ""),
+            "isp": data.get("isp", ""),
+            "country": data.get("country", ""),
+            "city": data.get("city", ""),
+            "lastUpdate": data.get("last_update", ""),
+        },
+        "ports": data.get("ports", []),
+        "services": data.get("data", []),
+        "vulnerabilities": data.get("vulns", []),
+    }
 
 
 @router.post("/virustotal", summary="VirusTotal scan")
@@ -69,7 +85,23 @@ async def virustotal_scan(request: VirusTotalRequest) -> dict[str, Any]:
     service = _get_service()
     scan_id = str(uuid4())
     result = await service.run_virustotal_scan(target, request.target_type, scan_id)
-    return {"scan_id": scan_id, "target": target, "result": result.model_dump()}
+    data = result.model_dump()
+    # Flatten to match frontend VtResponse: {target, positives, total, vendors, ...}
+    vendor_results = data.get("results", {})
+    vendors = [
+        {"vendor": k, "verdict": ("malicious" if v.get("detected") else "clean"), "detail": v.get("result", "")}
+        for k, v in vendor_results.items()
+    ] if isinstance(vendor_results, dict) else []
+    return {
+        "scan_id": scan_id,
+        "target": data.get("target", target),
+        "targetType": data.get("target_type", request.target_type),
+        "positives": data.get("positives", 0),
+        "total": data.get("total", 0),
+        "scanDate": data.get("scan_date", ""),
+        "permalink": data.get("permalink", ""),
+        "vendors": vendors,
+    }
 
 
 @router.post("/hibp", summary="HIBP breach check")
@@ -79,11 +111,13 @@ async def hibp_check(request: HIBPRequest) -> dict[str, Any]:
     service = _get_service()
     scan_id = str(uuid4())
     results = await service.run_hibp_check(target, request.target_type, scan_id)
+    # Flatten to match frontend BreachResponse: {target, totalBreaches, breaches}
+    breaches = [r.model_dump() for r in results]
     return {
         "scan_id": scan_id,
         "target": target,
-        "results": [r.model_dump() for r in results],
-        "count": len(results),
+        "totalBreaches": len(breaches),
+        "breaches": breaches,
     }
 
 
@@ -96,7 +130,15 @@ async def reputation_check(request: ScanRequest) -> dict[str, Any]:
     service = _get_service()
     scan_id = str(uuid4())
     result = await service.run_reputation_check(target, scan_id)
-    return {"scan_id": scan_id, "target": target, "result": result.model_dump()}
+    data = result.model_dump()
+    # Flatten to match frontend ReputationResponse: {target, score, categories, details}
+    return {
+        "scan_id": scan_id,
+        "target": data.get("target", target),
+        "score": data.get("reputation_score", 0),
+        "categories": [{"name": c, "score": 0} for c in data.get("categories", [])],
+        "details": data.get("details", {}),
+    }
 
 
 @router.get("/history", summary="OSINT scan history")

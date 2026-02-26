@@ -25,7 +25,8 @@ export function DependencyCheckPanel() {
   const handleAnalyze = useCallback(async (content: string, filename: string) => {
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<DependencyCheckResponse>('/api/vuln/dependencies', { content, filename });
+      const file_type = filename.includes('package') ? 'package_json' : 'requirements';
+      const data = await ApiClient.post<DependencyCheckResponse>('/api/vuln/dependencies', { content, file_type });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Dependency check failed'); setStatus('error');
