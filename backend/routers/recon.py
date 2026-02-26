@@ -73,7 +73,7 @@ async def port_scan(request: PortScanRequest) -> dict[str, Any]:
     return {
         "scan_id": scan_id,
         "target": target,
-        "portRange": request.ports,
+        "portRange": request.resolved_ports,
         "ports": [r.model_dump() for r in results],
         "total": len(results),
         "openPorts": len(open_ports),
@@ -101,7 +101,18 @@ async def whois_lookup(request: ScanRequest) -> dict[str, Any]:
         if k not in ("raw", "fields", "createdDate", "expiresDate", "updatedDate", "nameServers")
         and v and not isinstance(v, (dict, list))
     ]
-    return {"target": domain, "result": data}
+    # Return flat structure matching frontend WhoisResponse type
+    return {
+        "domain": data.get("domain", domain),
+        "registrar": data.get("registrar", ""),
+        "createdDate": data["createdDate"],
+        "expiresDate": data["expiresDate"],
+        "updatedDate": data["updatedDate"],
+        "nameServers": data["nameServers"],
+        "status": data.get("status", []),
+        "registrant": data["registrant"],
+        "fields": data["fields"],
+    }
 
 
 @router.post("/dns", summary="DNS analysis")

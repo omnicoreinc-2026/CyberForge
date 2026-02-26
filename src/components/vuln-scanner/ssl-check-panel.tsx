@@ -28,7 +28,7 @@ export function SslCheckPanel() {
     if (!target.trim()) return;
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<SslCheckResponse>('/api/vuln/ssl', { target: target.trim() });
+      const data = await ApiClient.post<SslCheckResponse>('/api/vuln/ssl', { hostname: target.trim() });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'SSL check failed'); setStatus('error');

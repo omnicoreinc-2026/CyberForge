@@ -43,7 +43,7 @@ class NvdClient:
         loop = asyncio.get_running_loop()
 
         def _search() -> list:
-            kwargs: dict = {"keywordSearch": keyword, "resultsPerPage": 20}
+            kwargs: dict = {"keywordSearch": keyword, "limit": 20}
             if self._api_key:
                 kwargs["key"] = self._api_key
             return list(nvdlib.searchCVE(**kwargs))

@@ -65,7 +65,7 @@ async def _check_package_nvd(package: str, version: str) -> list[DependencyVuln]
     def _search() -> list:
         try:
             results = nvdlib.searchCVE(
-                keywordSearch=package + " " + version, resultsPerPage=5
+                keywordSearch=package + " " + version, limit=5
             )
             return list(results)
         except Exception as exc:

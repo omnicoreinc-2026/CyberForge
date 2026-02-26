@@ -74,7 +74,7 @@ async function put<T>(endpoint: string, body?: unknown): Promise<T> {
 }
 
 async function fetchHealth(): Promise<HealthResponse> {
-  return get<HealthResponse>('/health');
+  return get<HealthResponse>('/api/health');
 }
 
 export const ApiClient = {
