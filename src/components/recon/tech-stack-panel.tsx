@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layers, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,22 +19,36 @@ const categoryColors: Record<TechCategory, string> = {
   Other: 'bg-text-muted/20 text-text-muted border-text-muted/30',
 };
 
-export function TechStackPanel() {
+interface TechStackPanelProps {
+  externalTarget?: string;
+}
+
+export function TechStackPanel({ externalTarget }: TechStackPanelProps) {
   const [target, setTarget] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [results, setResults] = useState<TechStackResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<TechStackResponse>('/api/recon/tech', { target: target.trim() });
+      const data = await ApiClient.post<TechStackResponse>('/api/recon/tech', { target: t });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Tech stack detection failed'); setStatus('error');
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   return (
     <div className="flex flex-col gap-4">

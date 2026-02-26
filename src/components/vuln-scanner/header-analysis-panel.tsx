@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Search, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,23 +14,37 @@ const gradeColors: Record<SecurityGrade, string> = {
   'D': 'text-high bg-high/10 border-high/30', 'F': 'text-danger bg-danger/10 border-danger/30',
 };
 
-export function HeaderAnalysisPanel() {
+interface HeaderAnalysisPanelProps {
+  externalTarget?: string;
+}
+
+export function HeaderAnalysisPanel({ externalTarget }: HeaderAnalysisPanelProps) {
   const [target, setTarget] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [results, setResults] = useState<HeaderAnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<HeaderAnalysisResponse>('/api/vuln/headers', { target: target.trim() });
+      const data = await ApiClient.post<HeaderAnalysisResponse>('/api/vuln/headers', { target: t });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Header analysis failed'); setStatus('error');
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   const toggleExpand = (name: string) => setExpanded((prev) => ({ ...prev, [name]: !prev[name] }));
 

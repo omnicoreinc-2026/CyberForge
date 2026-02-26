@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,7 +20,11 @@ const portMapColors: Record<PortState, string> = {
   open: 'bg-accent', closed: 'bg-bg-secondary', filtered: 'bg-warning',
 };
 
-export function PortScanPanel() {
+interface PortScanPanelProps {
+  externalTarget?: string;
+}
+
+export function PortScanPanel({ externalTarget }: PortScanPanelProps) {
   const [target, setTarget] = useState('');
   const [portRange, setPortRange] = useState('1-1000');
   const [status, setStatus] = useState<ScanStatus>('idle');
@@ -29,18 +33,28 @@ export function PortScanPanel() {
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('port');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus('running'); setError(null); setProgress(0);
     const iv = setInterval(() => setProgress((p) => Math.min(p + Math.random() * 8, 95)), 500);
     try {
-      const data = await ApiClient.post<PortScanResponse>('/api/recon/ports', { target: target.trim(), portRange: portRange.trim() });
+      const data = await ApiClient.post<PortScanResponse>('/api/recon/ports', { target: t, portRange: portRange.trim() });
       clearInterval(iv); setProgress(100); setResults(data); setStatus('complete');
     } catch (err) {
       clearInterval(iv); setError(err instanceof ApiClientError ? err.message : 'Port scan failed'); setStatus('error');
     }
   }, [target, portRange]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));

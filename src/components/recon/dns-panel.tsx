@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Network, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,23 +8,37 @@ import type { ScanStatus } from '@/types/scan';
 
 const recordTypes: DnsRecordType[] = ['A', 'AAAA', 'MX', 'NS', 'TXT', 'CNAME', 'SOA'];
 
-export function DnsPanel() {
+interface DnsPanelProps {
+  externalTarget?: string;
+}
+
+export function DnsPanel({ externalTarget }: DnsPanelProps) {
   const [target, setTarget] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [results, setResults] = useState<DnsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<DnsResponse>('/api/recon/dns', { target: target.trim() });
+      const data = await ApiClient.post<DnsResponse>('/api/recon/dns', { target: t });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'DNS lookup failed'); setStatus('error');
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   const toggleGroup = (type: string) => setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }));
 

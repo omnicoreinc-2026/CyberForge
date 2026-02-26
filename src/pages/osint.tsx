@@ -18,10 +18,9 @@ const tabs: { id: OsintTab; label: string; icon: typeof Search }[] = [
 
 export function OsintPage() {
   const [activeTab, setActiveTab] = useState<OsintTab>('shodan');
+  const [globalTarget, setGlobalTarget] = useState('');
 
-  const handleGlobalScan = useCallback((target: string) => {
-    console.log('OSINT scan on:', target);
-  }, []);
+  const handleGlobalScan = useCallback((t: string) => { setGlobalTarget(t); }, []);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
@@ -46,10 +45,10 @@ export function OsintPage() {
       </div>
 
       <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        {activeTab === 'shodan' && <ShodanPanel />}
-        {activeTab === 'virustotal' && <VirusTotalPanel />}
-        {activeTab === 'breach' && <BreachLookupPanel />}
-        {activeTab === 'reputation' && <ReputationPanel />}
+        {activeTab === 'shodan' && <ShodanPanel externalTarget={globalTarget} />}
+        {activeTab === 'virustotal' && <VirusTotalPanel externalTarget={globalTarget} />}
+        {activeTab === 'breach' && <BreachLookupPanel externalTarget={globalTarget} />}
+        {activeTab === 'reputation' && <ReputationPanel externalTarget={globalTarget} />}
       </motion.div>
     </motion.div>
   );

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Search, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,17 +21,22 @@ const verdictBg: Record<VtVerdict, string> = {
   undetected: 'bg-bg-secondary border-border',
 };
 
-export function VirusTotalPanel() {
+interface VirusTotalPanelProps {
+  externalTarget?: string;
+}
+
+export function VirusTotalPanel({ externalTarget }: VirusTotalPanelProps) {
   const [target, setTarget] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [results, setResults] = useState<VtResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus('running'); setError(null);
     try {
-      const t = target.trim();
       const target_type = t.match(/^[\d.]+$/) ? 'ip' : t.match(/^[a-f0-9]{32,}$/i) ? 'hash' : t.includes('/') ? 'url' : 'domain';
       const data = await ApiClient.post<VtResponse>('/api/osint/virustotal', { target: t, target_type });
       setResults(data); setStatus('complete');
@@ -39,6 +44,14 @@ export function VirusTotalPanel() {
       setError(err instanceof ApiClientError ? err.message : 'VirusTotal scan failed'); setStatus('error');
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   const ratio = results ? results.positives / results.total : 0;
   const ringColor = ratio === 0 ? '#22c55e' : ratio < 0.1 ? '#f59e0b' : '#ef4444';

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldOff, Search, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,22 +21,36 @@ function formatPwnCount(n: number): string {
   return String(n);
 }
 
-export function BreachLookupPanel() {
+interface BreachLookupPanelProps {
+  externalTarget?: string;
+}
+
+export function BreachLookupPanel({ externalTarget }: BreachLookupPanelProps) {
   const [target, setTarget] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [results, setResults] = useState<BreachResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus('running'); setError(null);
     try {
-      const data = await ApiClient.post<BreachResponse>('/api/osint/hibp', { target: target.trim(), target_type: target.includes('@') ? 'email' : 'domain' });
+      const data = await ApiClient.post<BreachResponse>('/api/osint/hibp', { target: t, target_type: t.includes('@') ? 'email' : 'domain' });
       setResults(data); setStatus('complete');
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Breach lookup failed'); setStatus('error');
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   return (
     <div className="flex flex-col gap-4">

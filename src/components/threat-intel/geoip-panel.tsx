@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Search, Globe, Server, Building, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,18 +16,24 @@ function InfoRow({ icon: Icon, label, value }: { icon: typeof Globe; label: stri
   );
 }
 
-export function GeoipPanel() {
+interface GeoipPanelProps {
+  externalTarget?: string;
+}
+
+export function GeoipPanel({ externalTarget }: GeoipPanelProps) {
   const [target, setTarget] = useState("");
   const [status, setStatus] = useState<ScanStatus>("idle");
   const [results, setResults] = useState<GeoIpData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus("running");
     setError(null);
     try {
-      const data = await ApiClient.post<GeoIpData>("/api/threat/geoip", { target: target.trim() });
+      const data = await ApiClient.post<GeoIpData>("/api/threat/geoip", { target: t });
       if ("error" in data && data.error) {
         setError(data.error as string);
         setStatus("error");
@@ -41,6 +47,14 @@ export function GeoipPanel() {
       setStatus("error");
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   return (
     <div className="flex flex-col gap-4">

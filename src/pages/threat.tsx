@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ShieldAlert, Search, Shield, Rss, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TargetInput } from "@/components/shared/target-input";
 import { IocLookupPanel } from "@/components/threat-intel/ioc-lookup-panel";
 import { IpReputationPanel } from "@/components/threat-intel/ip-reputation-panel";
 import { ThreatFeedPanel } from "@/components/threat-intel/threat-feed-panel";
@@ -22,6 +23,9 @@ const containerVariants = {
 
 export function ThreatPage() {
   const [activeTab, setActiveTab] = useState<ThreatTab>("ioc");
+  const [globalTarget, setGlobalTarget] = useState("");
+
+  const handleGlobalScan = useCallback((t: string) => { setGlobalTarget(t); }, []);
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col gap-6">
@@ -32,6 +36,8 @@ export function ThreatPage() {
           <p className="text-sm text-text-secondary">IOC lookups, IP reputation, threat feeds, and geolocation</p>
         </div>
       </div>
+
+      <TargetInput onScan={handleGlobalScan} placeholder="Enter target for threat intelligence scan..." />
 
       <div className="flex items-center gap-1 rounded-lg border border-border bg-bg-secondary p-1">
         {tabs.map((tab) => (
@@ -52,10 +58,10 @@ export function ThreatPage() {
       </div>
 
       <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        {activeTab === "ioc" && <IocLookupPanel />}
-        {activeTab === "reputation" && <IpReputationPanel />}
+        {activeTab === "ioc" && <IocLookupPanel externalTarget={globalTarget} />}
+        {activeTab === "reputation" && <IpReputationPanel externalTarget={globalTarget} />}
         {activeTab === "feed" && <ThreatFeedPanel />}
-        {activeTab === "geoip" && <GeoipPanel />}
+        {activeTab === "geoip" && <GeoipPanel externalTarget={globalTarget} />}
       </motion.div>
     </motion.div>
   );

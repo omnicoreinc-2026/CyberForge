@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,19 +15,25 @@ function isExpiringSoon(dateStr: string): boolean {
   return diffDays > 0 && diffDays <= 30;
 }
 
-export function WhoisPanel() {
+interface WhoisPanelProps {
+  externalTarget?: string;
+}
+
+export function WhoisPanel({ externalTarget }: WhoisPanelProps) {
   const [target, setTarget] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [results, setResults] = useState<WhoisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus('running');
     setError(null);
     try {
       const data = await ApiClient.post<WhoisResponse>('/api/recon/whois', {
-        target: target.trim(),
+        target: t,
       });
       setResults(data);
       setStatus('complete');
@@ -37,6 +43,14 @@ export function WhoisPanel() {
       setStatus('error');
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   const keyValuePairs = results
     ? [

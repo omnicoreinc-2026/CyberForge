@@ -25,10 +25,9 @@ const containerVariants = {
 
 export function ReconPage() {
   const [activeTab, setActiveTab] = useState<ReconTab>('subdomains');
+  const [globalTarget, setGlobalTarget] = useState('');
 
-  const handleFullRecon = useCallback((target: string) => {
-    console.log('Full recon on:', target);
-  }, []);
+  const handleFullRecon = useCallback((t: string) => { setGlobalTarget(t); }, []);
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col gap-6">
@@ -53,11 +52,11 @@ export function ReconPage() {
       </div>
 
       <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        {activeTab === 'subdomains' && <SubdomainPanel />}
-        {activeTab === 'ports' && <PortScanPanel />}
-        {activeTab === 'whois' && <WhoisPanel />}
-        {activeTab === 'dns' && <DnsPanel />}
-        {activeTab === 'techstack' && <TechStackPanel />}
+        {activeTab === 'subdomains' && <SubdomainPanel externalTarget={globalTarget} />}
+        {activeTab === 'ports' && <PortScanPanel externalTarget={globalTarget} />}
+        {activeTab === 'whois' && <WhoisPanel externalTarget={globalTarget} />}
+        {activeTab === 'dns' && <DnsPanel externalTarget={globalTarget} />}
+        {activeTab === 'techstack' && <TechStackPanel externalTarget={globalTarget} />}
       </motion.div>
     </motion.div>
   );

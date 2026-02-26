@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, Search, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -9,20 +9,26 @@ import type { ScanStatus } from '@/types/scan';
 type SortField = 'subdomain' | 'ip' | 'source';
 type SortDir = 'asc' | 'desc';
 
-export function SubdomainPanel() {
+interface SubdomainPanelProps {
+  externalTarget?: string;
+}
+
+export function SubdomainPanel({ externalTarget }: SubdomainPanelProps) {
   const [target, setTarget] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [results, setResults] = useState<SubdomainScanResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('subdomain');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus('running');
     setError(null);
     try {
-      const data = await ApiClient.post<SubdomainScanResponse>('/api/recon/subdomains', { target: target.trim() });
+      const data = await ApiClient.post<SubdomainScanResponse>('/api/recon/subdomains', { target: t });
       setResults(data);
       setStatus('complete');
     } catch (err) {
@@ -31,6 +37,14 @@ export function SubdomainPanel() {
       setStatus('error');
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
@@ -63,7 +77,7 @@ export function SubdomainPanel() {
               'disabled:cursor-not-allowed disabled:opacity-50')} />
         </div>
         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          onClick={() => void handleScan()} disabled={status === 'running' || !target.trim()}
+          onClick={() => void handleScan(undefined)} disabled={status === 'running' || !target.trim()}
           className={cn('flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5',
             'text-sm font-medium text-bg-primary disabled:cursor-not-allowed disabled:opacity-50',
             'hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]')}>

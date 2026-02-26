@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShieldAlert, AlertTriangle, Database, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -112,18 +112,24 @@ function IocResultRow({ result, index }: { result: IocResult; index: number }) {
   );
 }
 
-export function IocLookupPanel() {
+interface IocLookupPanelProps {
+  externalTarget?: string;
+}
+
+export function IocLookupPanel({ externalTarget }: IocLookupPanelProps) {
   const [target, setTarget] = useState("");
   const [status, setStatus] = useState<ScanStatus>("idle");
   const [results, setResults] = useState<IocLookupResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<string>('');
 
-  const handleScan = useCallback(async () => {
-    if (!target.trim()) return;
+  const handleScan = useCallback(async (override?: string) => {
+    const t = (override ?? target).trim();
+    if (!t) return;
     setStatus("running");
     setError(null);
     try {
-      const data = await ApiClient.post<IocLookupResponse>("/api/threat/ioc", { target: target.trim() });
+      const data = await ApiClient.post<IocLookupResponse>("/api/threat/ioc", { target: t });
       setResults(data);
       setStatus("complete");
     } catch (err) {
@@ -132,6 +138,14 @@ export function IocLookupPanel() {
       setStatus("error");
     }
   }, [target]);
+
+  useEffect(() => {
+    if (externalTarget && externalTarget !== triggerRef.current) {
+      triggerRef.current = externalTarget;
+      setTarget(externalTarget);
+      void handleScan(externalTarget);
+    }
+  }, [externalTarget, handleScan]);
 
   const sev = results ? severityConfig[results.severity] : severityConfig.info;
 
