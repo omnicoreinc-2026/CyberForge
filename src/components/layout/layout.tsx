@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
 import { StatusBar } from './status-bar';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 export function Layout() {
   return (
@@ -15,7 +16,9 @@ export function Layout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         <StatusBar />

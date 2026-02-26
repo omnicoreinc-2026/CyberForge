@@ -1,13 +1,24 @@
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import '@/styles/globals.css';
 import { App } from './App';
+import { ToastProvider } from '@/components/ui/toast';
+import { SetupWizard, isSetupComplete } from '@/components/onboarding/setup-wizard';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
-);
+function Root() {
+  const [setupDone, setSetupDone] = useState(isSetupComplete());
+
+  return (
+    <StrictMode>
+      <ToastProvider>
+        <BrowserRouter>
+          {!setupDone && <SetupWizard onComplete={() => setSetupDone(true)} />}
+          <App />
+        </BrowserRouter>
+      </ToastProvider>
+    </StrictMode>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<Root />);
