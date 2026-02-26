@@ -106,3 +106,91 @@ body {
   background: var(--color-accent-dim);
   color: var(--color-accent);
 }
+
+/* Stat card gradient backgrounds */
+.stat-gradient-scans {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.08) 0%, rgba(0, 212, 255, 0.02) 100%);
+  border-color: rgba(0, 212, 255, 0.15);
+}
+
+.stat-gradient-vulns {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.stat-gradient-threats {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(249, 115, 22, 0.02) 100%);
+  border-color: rgba(249, 115, 22, 0.15);
+}
+
+.stat-gradient-reports {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.02) 100%);
+  border-color: rgba(34, 197, 94, 0.15);
+}
+
+/* Timeline connector line */
+.timeline-line {
+  position: relative;
+}
+
+.timeline-line::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 40px;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, var(--color-border-hover), transparent);
+}
+
+.timeline-line:last-child::before {
+  display: none;
+}
+
+/* Hover glow for module cards */
+.module-card-glow:hover {
+  box-shadow: 0 0 24px rgba(0, 212, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Status badge styles */
+.status-badge-completed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.status-badge-running {
+  background: rgba(0, 212, 255, 0.15);
+  color: #00d4ff;
+}
+
+.status-badge-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.status-badge-pending {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+/* Quick action button base */
+.quick-action-btn {
+  background: var(--color-bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.quick-action-btn:hover {
+  background: var(--color-bg-card-hover);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.1);
+}
+
+/* Modal overlay */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}

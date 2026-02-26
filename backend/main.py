@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
 from backend.database import db
-from backend.routers import assistant, health, logs, osint, recon, settings as settings_router, threat, vuln, websocket
+from backend.routers import assistant, health, logs, osint, recon, reports, settings as settings_router, stats, threat, vuln, websocket
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +75,8 @@ def create_app() -> FastAPI:
     app.include_router(vuln.router, prefix="/api")
     app.include_router(threat.router, prefix="/api")
     app.include_router(logs.router, prefix="/api")
+    app.include_router(stats.router, prefix="/api")
+    app.include_router(reports.router, prefix="/api")
     app.include_router(settings_router.router)
     app.include_router(assistant.router)
     app.include_router(websocket.router)

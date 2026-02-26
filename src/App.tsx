@@ -8,15 +8,8 @@ import { SettingsPage } from '@/components/settings/settings-page';
 import { LogsPage } from '@/pages/logs';
 import { AIPage } from "@/pages/ai";
 import { ThreatPage } from "@/pages/threat";
+import { ReportsPage } from "@/pages/reports";
 
-function PlaceholderPage({ name }: { name: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 py-20">
-      <h1 className="text-2xl font-bold text-text-primary">{name}</h1>
-      <p className="text-sm text-text-secondary">This module is under construction.</p>
-    </div>
-  );
-}
 
 export function App() {
   return (
@@ -28,7 +21,7 @@ export function App() {
         <Route path="vuln" element={<VulnPage />} />
         <Route path="threat" element={<ThreatPage />} />
         <Route path="logs" element={<LogsPage />} />
-        <Route path="reports" element={<PlaceholderPage name="Reports" />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="ai" element={<AIPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

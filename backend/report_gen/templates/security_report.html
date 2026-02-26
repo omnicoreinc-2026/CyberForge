@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ report.title }} - CyberForge Report</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; font-size: 11pt; color: #1a1a2e; line-height: 1.6; background: #fff; }
+  .header { background: linear-gradient(135deg, #0a0a1a 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 40px 30px; margin: -2cm -2cm 30px -2cm; }
+  .header h1 { font-size: 24pt; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .header .subtitle { font-size: 11pt; color: #8ecae6; opacity: 0.9; }
+  .header .meta { margin-top: 20px; display: flex; gap: 30px; font-size: 9pt; color: #b8c6db; }
+  .header .meta span { display: inline-block; }
+  .risk-badge { display: inline-block; padding: 6px 16px; border-radius: 6px; font-weight: 700; font-size: 11pt; text-transform: uppercase; }
+  .risk-critical { background: #ff2d55; color: #fff; }
+  .risk-high { background: #ff6b35; color: #fff; }
+  .risk-medium { background: #ffb800; color: #1a1a2e; }
+  .risk-low { background: #34c759; color: #fff; }
+  .risk-info { background: #5ac8fa; color: #1a1a2e; }
+  h2 { font-size: 16pt; color: #16213e; border-bottom: 3px solid #0f3460; padding-bottom: 8px; margin: 30px 0 15px 0; }
+  h3 { font-size: 13pt; color: #0f3460; margin: 20px 0 10px 0; }
+  .section { margin-bottom: 25px; }
+  .summary-text { background: #f0f4f8; border-left: 4px solid #0f3460; padding: 15px 20px; margin: 10px 0; font-size: 10.5pt; line-height: 1.7; white-space: pre-wrap; }
+  .stats-grid { display: flex; flex-wrap: wrap; gap: 12px; margin: 15px 0; }
+  .stat-card { background: #f0f4f8; border: 1px solid #d1d9e6; border-radius: 8px; padding: 15px 20px; min-width: 130px; text-align: center; }
+  .stat-card .value { font-size: 22pt; font-weight: 700; color: #0f3460; }
+  .stat-card .label { font-size: 8pt; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.5pt; }
+  th { background: #16213e; color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  tr:hover td { background: #eef2f7; }
+  .sev-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 600; text-transform: uppercase; }
+  .sev-critical { background: #ff2d55; color: #fff; }
+  .sev-high { background: #ff6b35; color: #fff; }
+  .sev-medium { background: #ffb800; color: #1a1a2e; }
+  .sev-low { background: #34c759; color: #fff; }
+  .sev-info { background: #5ac8fa; color: #1a1a2e; }
+  .rec-card { border: 1px solid #d1d9e6; border-radius: 8px; padding: 15px 20px; margin: 10px 0; page-break-inside: avoid; }
+  .rec-card .rec-priority { font-weight: 700; font-size: 9pt; text-transform: uppercase; margin-bottom: 4px; }
+  .rec-card .rec-title { font-size: 11pt; font-weight: 600; color: #16213e; }
+  .rec-card .rec-desc { font-size: 10pt; color: #4b5563; margin-top: 6px; line-height: 1.5; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #d1d9e6; text-align: center; font-size: 8pt; color: #9ca3af; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>{{ report.title }}</h1>
+  <div class="subtitle">CyberForge Security Assessment Report</div>
+  <div class="meta">
+    <span><strong>Type:</strong> {{ report.report_type }}</span>
+    <span><strong>Generated:</strong> {{ report.generated_at }}</span>
+    <span><strong>Targets:</strong> {{ report.targets | join(", ") }}</span>
+  </div>
+</div>
+
+<!-- Overall Risk -->
+<div class="section">
+  <h2>Overall Risk Assessment</h2>
+  {% set risk_class = "risk-" + report.overall_risk | lower %}
+  <span class="risk-badge {{ risk_class }}">{{ report.overall_risk }}</span>
+</div>
+
+<!-- Executive Summary -->
+{% if report.executive_summary %}
+<div class="section">
+  <h2>Executive Summary</h2>
+  <div class="summary-text">{{ report.executive_summary }}</div>
+</div>
+{% endif %}
+
+<!-- Statistics -->
+{% if report.statistics %}
+<div class="section">
+  <h2>Statistics Overview</h2>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="value">{{ report.statistics.total_scans }}</div>
+      <div class="label">Total Scans</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">{{ report.statistics.total_findings }}</div>
+      <div class="label">Total Findings</div>
+    </div>
+    {% for sev, count in report.statistics.severity_counts.items() %}
+    <div class="stat-card">
+      <div class="value">{{ count }}</div>
+      <div class="label">{{ sev | capitalize }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Scan Results -->
+{% if report.scans %}
+<div class="section page-break">
+  <h2>Scan Results</h2>
+  {% for scan in report.scans %}
+  <h3>{{ scan.scan_type }} &mdash; {{ scan.target }}</h3>
+  <p><strong>Severity:</strong> <span class="sev-badge sev-{{ scan.severity }}">{{ scan.severity }}</span> &nbsp; <strong>Date:</strong> {{ scan.created_at }} &nbsp; <strong>Findings:</strong> {{ scan.results | length }}</p>
+  {% if scan.results %}
+  <table>
+    <thead><tr><th>#</th><th>Finding</th><th>Severity</th><th>Details</th></tr></thead>
+    <tbody>
+    {% for finding in scan.results[:30] %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>
+        {% if finding is mapping %}
+          {{ finding.get("name", finding.get("title", finding.get("host", "-"))) }}
+        {% else %}
+          {{ finding | string | truncate(60) }}
+        {% endif %}
+      </td>
+      <td>
+        {% if finding is mapping %}
+          {% set fsev = finding.get("severity", finding.get("risk", "info")) | lower %}
+          <span class="sev-badge sev-{{ fsev }}">{{ fsev }}</span>
+        {% else %}
+          <span class="sev-badge sev-info">info</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if finding is mapping %}
+          {{ finding.get("description", finding.get("info", "-")) | truncate(80) }}
+        {% else %}
+          -
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    {% if scan.results | length > 30 %}
+    <tr><td colspan="4" style="text-align:center;color:#6b7280;font-style:italic;">... and {{ scan.results | length - 30 }} more findings</td></tr>
+    {% endif %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recommendations -->
+{% if report.recommendations %}
+<div class="section page-break">
+  <h2>Recommendations</h2>
+  {% for rec in report.recommendations %}
+  <div class="rec-card">
+    {% set pclass = "sev-" + rec.priority | lower %}
+    <div class="rec-priority"><span class="sev-badge {{ pclass }}">{{ rec.priority }}</span></div>
+    <div class="rec-title">{{ rec.title }}</div>
+    <div class="rec-desc">{{ rec.description }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Footer -->
+<div class="footer">
+  <p>Generated by <strong>CyberForge</strong> Security Command Center</p>
+  <p>This report is confidential and intended for authorized personnel only.</p>
+</div>
+
+</body>
+</html>
