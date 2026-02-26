@@ -1,0 +1,56 @@
+# CyberForge Backend Dependencies
+# Install: pip install -r requirements.txt
+
+# --- Core framework ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+
+# --- Database ---
+aiosqlite>=0.20.0
+
+# --- HTTP client ---
+httpx>=0.28.0
+
+# --- WebSocket ---
+websockets>=14.0
+
+# --- File uploads ---
+python-multipart>=0.0.18
+
+# --- Cryptography / keyring ---
+cryptography>=44.0.0
+keyring>=25.5.0
+
+# --- Network scanning ---
+python-nmap>=0.7.1
+dnspython>=2.7.0
+python-whois>=0.9.4
+
+# --- Threat intelligence APIs ---
+shodan>=1.31.0
+vt-py>=0.18.0
+nvdlib>=0.7.7
+OTXv2>=1.5.12
+geoip2>=4.8.1
+
+# --- Parsing ---
+pyparsing>=3.2.0
+python-evtx>=0.7.4
+pandas>=2.2.0
+
+# --- Async file I/O ---
+aiofiles>=24.1.0
+
+# --- Report generation ---
+jinja2>=3.1.4
+weasyprint>=63.0
+markdown>=3.7
+
+# --- AI integration ---
+anthropic>=0.42.0
+openai>=1.58.0
+
+# --- Packaging ---
+pyinstaller>=6.11.0

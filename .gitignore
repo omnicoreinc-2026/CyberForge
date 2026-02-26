@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build outputs
+build/
+dist/
+*.exe
+*.msi
+
+# Tauri
+src-tauri/target/
+
+# Database
+data/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
