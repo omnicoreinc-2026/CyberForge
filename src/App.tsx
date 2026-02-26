@@ -1,6 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from '@/components/layout/layout';
 import { DashboardPage } from '@/pages/dashboard';
+import { ReconPage } from '@/pages/recon';
+import { OsintPage } from '@/pages/osint';
+import { VulnPage } from '@/pages/vuln';
+import { SettingsPage } from '@/components/settings/settings-page';
 
 function PlaceholderPage({ name }: { name: string }) {
   return (
@@ -16,14 +20,14 @@ export function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="recon" element={<PlaceholderPage name="Reconnaissance" />} />
-        <Route path="osint" element={<PlaceholderPage name="OSINT" />} />
-        <Route path="vuln" element={<PlaceholderPage name="Vulnerability Scanner" />} />
+        <Route path="recon" element={<ReconPage />} />
+        <Route path="osint" element={<OsintPage />} />
+        <Route path="vuln" element={<VulnPage />} />
         <Route path="threat" element={<PlaceholderPage name="Threat Intelligence" />} />
         <Route path="logs" element={<PlaceholderPage name="Log Analyzer" />} />
         <Route path="reports" element={<PlaceholderPage name="Reports" />} />
         <Route path="ai" element={<PlaceholderPage name="AI Assistant" />} />
-        <Route path="settings" element={<PlaceholderPage name="Settings" />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );

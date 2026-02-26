@@ -52,6 +52,27 @@ async function post<T>(endpoint: string, body?: unknown): Promise<T> {
   return handleResponse<T>(response);
 }
 
+async function del<T>(endpoint: string): Promise<T> {
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  return handleResponse<T>(response);
+}
+
+async function put<T>(endpoint: string, body?: unknown): Promise<T> {
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return handleResponse<T>(response);
+}
+
 async function fetchHealth(): Promise<HealthResponse> {
   return get<HealthResponse>('/health');
 }
@@ -59,6 +80,8 @@ async function fetchHealth(): Promise<HealthResponse> {
 export const ApiClient = {
   get,
   post,
+  put,
+  del,
   fetchHealth,
   BASE_URL,
 };
