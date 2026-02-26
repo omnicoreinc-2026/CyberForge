@@ -13,8 +13,7 @@ function Root() {
     <StrictMode>
       <ToastProvider>
         <BrowserRouter>
-          {!setupDone && <SetupWizard onComplete={() => setSetupDone(true)} />}
-          <App />
+          {setupDone ? <App /> : <SetupWizard onComplete={() => setSetupDone(true)} />}
         </BrowserRouter>
       </ToastProvider>
     </StrictMode>

@@ -18,19 +18,18 @@ interface StepProps {
   onBack?: () => void;
   onSkip?: () => void;
 }
-
 function WelcomeStep({ onNext }: StepProps) {
   return (
-    <div className="flex flex-col items-center text-center">
+    <div className="flex flex-col items-center text-center px-4">
       <motion.div
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-accent/20 border border-accent/30"
+        className="mb-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-accent/20 border border-accent/30"
       >
         <Shield className="h-12 w-12 text-accent" />
       </motion.div>
-      <h2 className="text-2xl font-bold text-text-primary mb-3">Welcome to CyberForge</h2>
-      <p className="text-text-secondary max-w-md leading-relaxed mb-8">
+      <h2 className="text-3xl font-bold text-text-primary mb-4">Welcome to CyberForge</h2>
+      <p className="text-text-secondary max-w-md leading-relaxed mb-10 text-base">
         Your AI-powered cybersecurity command center. Let us help you get set up
         so you can start scanning, analyzing, and protecting.
       </p>
@@ -63,37 +62,37 @@ function ApiKeysStep({ onNext, onBack, onSkip }: StepProps) {
   };
 
   return (
-    <div className="flex flex-col items-center text-center">
+    <div className="flex flex-col items-center text-center px-4">
       <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 border border-amber-500/30">
         <Key className="h-8 w-8 text-amber-400" />
       </div>
-      <h2 className="text-xl font-bold text-text-primary mb-2">Connect Your Services</h2>
-      <p className="text-text-secondary text-sm mb-6 max-w-md">
+      <h2 className="text-2xl font-bold text-text-primary mb-2">Connect Your Services</h2>
+      <p className="text-text-secondary text-sm mb-8 max-w-md">
         Add API keys for external services. You can always update these in Settings later.
       </p>
-      <div className="w-full max-w-sm space-y-3 mb-6">
+      <div className="w-full max-w-sm space-y-4 mb-8">
         {[
           { id: 'shodan', label: 'Shodan', placeholder: 'Shodan API key' },
           { id: 'virustotal', label: 'VirusTotal', placeholder: 'VirusTotal API key' },
           { id: 'otx', label: 'AlienVault OTX', placeholder: 'OTX API key' },
         ].map((svc) => (
           <div key={svc.id} className="text-left">
-            <label className="text-xs font-medium text-text-secondary mb-1 block">{svc.label}</label>
+            <label className="text-xs font-medium text-text-secondary mb-1.5 block">{svc.label}</label>
             <input
               type="password"
               placeholder={svc.placeholder}
               value={keys[svc.id as keyof typeof keys]}
               onChange={(e) => setKeys((p) => ({ ...p, [svc.id]: e.target.value }))}
-              className="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+              className="w-full rounded-lg border border-border bg-bg-primary px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
             />
           </div>
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="flex items-center gap-1 rounded-lg px-4 py-2 text-sm text-text-muted hover:text-text-secondary transition-colors">
+        <button onClick={onBack} className="flex items-center gap-1 rounded-lg px-4 py-2.5 text-sm text-text-muted hover:text-text-secondary transition-colors">
           <ChevronLeft className="h-4 w-4" /> Back
         </button>
-        <button onClick={onSkip} className="rounded-lg px-4 py-2 text-sm text-text-muted hover:text-text-secondary transition-colors">
+        <button onClick={onSkip} className="rounded-lg px-4 py-2.5 text-sm text-text-muted hover:text-text-secondary transition-colors">
           Skip for now
         </button>
         <button onClick={handleSave} className="flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-bg-primary transition-all hover:bg-accent/90">
@@ -127,36 +126,36 @@ function AiStep({ onNext, onBack }: StepProps) {
   ];
 
   return (
-    <div className="flex flex-col items-center text-center">
+    <div className="flex flex-col items-center text-center px-4">
       <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-500/20 border border-purple-500/30">
         <Brain className="h-8 w-8 text-purple-400" />
       </div>
-      <h2 className="text-xl font-bold text-text-primary mb-2">Choose AI Provider</h2>
-      <p className="text-text-secondary text-sm mb-6 max-w-md">
+      <h2 className="text-2xl font-bold text-text-primary mb-2">Choose AI Provider</h2>
+      <p className="text-text-secondary text-sm mb-8 max-w-md">
         Select which AI model powers your security assistant and analysis.
       </p>
-      <div className="w-full max-w-sm space-y-2 mb-6">
+      <div className="w-full max-w-sm space-y-3 mb-8">
         {providers.map((p) => (
           <button
             key={p.id}
             onClick={() => setProvider(p.id)}
             className={cn(
-              'w-full flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all',
+              'w-full flex items-center gap-3 rounded-lg border px-4 py-3.5 text-left transition-all',
               provider === p.id
                 ? 'border-accent bg-accent/10 text-text-primary'
                 : 'border-border bg-bg-card text-text-secondary hover:border-border-hover'
             )}
           >
-            <div className={cn('h-3 w-3 rounded-full border-2', provider === p.id ? 'border-accent bg-accent' : 'border-text-muted')} />
+            <div className={cn('h-3 w-3 rounded-full border-2 shrink-0', provider === p.id ? 'border-accent bg-accent' : 'border-text-muted')} />
             <div>
               <div className="text-sm font-medium">{p.name}</div>
-              <div className="text-xs text-text-muted">{p.desc}</div>
+              <div className="text-xs text-text-muted mt-0.5">{p.desc}</div>
             </div>
           </button>
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="flex items-center gap-1 rounded-lg px-4 py-2 text-sm text-text-muted hover:text-text-secondary transition-colors">
+        <button onClick={onBack} className="flex items-center gap-1 rounded-lg px-4 py-2.5 text-sm text-text-muted hover:text-text-secondary transition-colors">
           <ChevronLeft className="h-4 w-4" /> Back
         </button>
         <button onClick={handleSave} className="flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-bg-primary transition-all hover:bg-accent/90">
@@ -174,17 +173,17 @@ function ReadyStep({ onNext }: StepProps) {
   };
 
   return (
-    <div className="flex flex-col items-center text-center">
+    <div className="flex flex-col items-center text-center px-4">
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-        className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/20 border border-green-500/30"
+        className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/20 border border-green-500/30"
       >
         <Check className="h-10 w-10 text-green-400" />
       </motion.div>
-      <h2 className="text-2xl font-bold text-text-primary mb-3">You are All Set!</h2>
-      <p className="text-text-secondary max-w-md leading-relaxed mb-8">
+      <h2 className="text-3xl font-bold text-text-primary mb-4">You are All Set!</h2>
+      <p className="text-text-secondary max-w-md leading-relaxed mb-10 text-base">
         CyberForge is ready. Start with a recon scan, check threat intel, or ask the AI assistant for guidance.
       </p>
       <button onClick={handleFinish} className="flex items-center gap-2 rounded-xl bg-accent px-8 py-3 text-sm font-semibold text-bg-primary transition-all hover:bg-accent/90 hover:scale-105">
@@ -218,14 +217,14 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   const StepComponent = steps[currentStep].component;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-primary/95 backdrop-blur-sm">
+    <div className="flex h-screen w-screen items-center justify-center bg-bg-primary">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg rounded-2xl border border-border bg-bg-secondary p-8 shadow-2xl"
+        className="w-full max-w-lg rounded-2xl border border-border bg-bg-secondary p-10 shadow-2xl"
       >
         {/* Step indicators */}
-        <div className="mb-8 flex items-center justify-center gap-2">
+        <div className="mb-10 flex items-center justify-center gap-2">
           {steps.map((_, i) => (
             <div
               key={i}
