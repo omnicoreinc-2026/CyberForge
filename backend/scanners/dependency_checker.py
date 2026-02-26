@@ -50,7 +50,7 @@ def _parse_package_json(content: str) -> list[tuple[str, str]]:
                 version = re.sub(r"^[~^>=<]*", "", version_spec)
                 packages.append((name.lower(), version))
     except (json.JSONDecodeError, AttributeError) as exc:
-        logger.error("Failed to parse package.json: %%s", exc)
+        logger.error("Failed to parse package.json: %s", exc)
     return packages
 
 
@@ -69,7 +69,7 @@ async def _check_package_nvd(package: str, version: str) -> list[DependencyVuln]
             )
             return list(results)
         except Exception as exc:
-            logger.debug("NVD search failed for %%s %%s: %%s", package, version, exc)
+            logger.debug("NVD search failed for %s %s: %s", package, version, exc)
             return []
 
     try:
@@ -97,7 +97,7 @@ async def _check_package_nvd(package: str, version: str) -> list[DependencyVuln]
                 severity=severity, description=description, fixed_version="",
             ))
     except Exception as exc:
-        logger.debug("NVD lookup error for %%s: %%s", package, exc)
+        logger.debug("NVD lookup error for %s: %s", package, exc)
     return vulns
 
 
@@ -109,7 +109,7 @@ async def check_requirements(content: str) -> list[DependencyVuln]:
         vulns = await _check_package_nvd(package, version)
         all_vulns.extend(vulns)
         await asyncio.sleep(0.6)
-    logger.info("Requirements check: %%d vulns in %%d packages", len(all_vulns), len(packages))
+    logger.info("Requirements check: %d vulns in %d packages", len(all_vulns), len(packages))
     return all_vulns
 
 
@@ -121,5 +121,5 @@ async def check_package_json(content: str) -> list[DependencyVuln]:
         vulns = await _check_package_nvd(package, version)
         all_vulns.extend(vulns)
         await asyncio.sleep(0.6)
-    logger.info("package.json check: %%d vulns in %%d packages", len(all_vulns), len(packages))
+    logger.info("package.json check: %d vulns in %d packages", len(all_vulns), len(packages))
     return all_vulns

@@ -9,6 +9,7 @@ import logging
 from typing import Optional
 
 from backend.models.vuln import CveResult
+from backend.utils.rate_limiter import rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class NvdClient:
             return list(nvdlib.searchCVE(**kwargs))
 
         try:
+            await rate_limiter.acquire("nvd")
             raw_results = await loop.run_in_executor(None, _search)
             return [self._parse_cve(r) for r in raw_results]
         except Exception as exc:
@@ -77,6 +79,7 @@ class NvdClient:
             return results[0] if results else None
 
         try:
+            await rate_limiter.acquire("nvd")
             result = await loop.run_in_executor(None, _get)
             if result is None:
                 return None

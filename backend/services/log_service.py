@@ -149,9 +149,21 @@ class LogService:
         return None
 
     def _detect_anomalies(self, entries: list[LogEntryModel]) -> list[LogAnomaly]:
-        """Run anomaly detection across all parsed entries."""
-        anomalies: list[LogAnomaly] = []
+        """Run multi-layer anomaly detection across all parsed entries.
 
+        Layers:
+            1. Pattern matching (SQL injection, XSS, path traversal, etc.)
+            2. Error burst detection (clustered errors in short spans)
+            3. Repeated auth failure detection (brute force indicators)
+            4. HTTP status code frequency analysis
+            5. Request rate spike detection (per-source)
+            6. Off-hours activity detection (unusual time windows)
+            7. Large response/payload anomaly (oversized requests)
+        """
+        anomalies: list[LogAnomaly] = []
+        existing_lines: set[int] = set()
+
+        # --- Layer 1: Pattern matching ---
         for idx, entry in enumerate(entries):
             text = f"{entry.message} {entry.raw}"
             for pattern, reason, severity in _COMPILED_PATTERNS:
@@ -160,8 +172,10 @@ class LogService:
                         line_number=idx + 1, entry=entry,
                         reason=reason, severity=severity, confidence=0.85,
                     ))
+                    existing_lines.add(idx + 1)
                     break
 
+        # --- Layer 2: Error burst detection ---
         error_entries = [
             (idx, e) for idx, e in enumerate(entries)
             if e.level.upper() in ("ERROR", "CRITICAL", "EMERGENCY", "ALERT")
@@ -173,14 +187,15 @@ class LogService:
                 end_idx = window[-1][0]
                 if end_idx - start_idx <= 20:
                     burst_entry = window[0][1]
-                    existing_lines = {a.line_number for a in anomalies}
                     if (start_idx + 1) not in existing_lines:
                         anomalies.append(LogAnomaly(
                             line_number=start_idx + 1, entry=burst_entry,
                             reason=f"Error burst: {len(window)} errors within {end_idx - start_idx + 1} lines",
                             severity="high", confidence=0.75,
                         ))
+                        existing_lines.add(start_idx + 1)
 
+        # --- Layer 3: Repeated auth failure detection ---
         auth_fail_sources: Counter[str] = Counter()
         for entry in entries:
             msg_lower = entry.message.lower()
@@ -198,10 +213,11 @@ class LogService:
                         level="WARNING",
                     ),
                     reason=f"Repeated failed authentication: {count} failures from {source}",
-                    severity="high" if count >= 10 else "medium",
+                    severity="critical" if count >= 20 else "high" if count >= 10 else "medium",
                     confidence=min(0.95, 0.5 + count * 0.05),
                 ))
 
+        # --- Layer 4: HTTP status code frequency ---
         status_codes: Counter[int] = Counter()
         for entry in entries:
             sc = entry.metadata.get("status_code")
@@ -217,6 +233,103 @@ class LogService:
                     severity="medium" if code < 500 else "high",
                     confidence=min(0.9, 0.4 + count * 0.02),
                 ))
+
+        # --- Layer 5: Request rate spike detection (per-source IP) ---
+        ip_time_buckets: dict[str, Counter[str]] = {}
+        for entry in entries:
+            ip = entry.metadata.get("ip")
+            ts = entry.timestamp
+            if isinstance(ip, str) and ip and ts:
+                if ip not in ip_time_buckets:
+                    ip_time_buckets[ip] = Counter()
+                try:
+                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    bucket = dt.strftime("%Y-%m-%d %H:%M")
+                    ip_time_buckets[ip][bucket] += 1
+                except (ValueError, TypeError):
+                    pass
+
+        for ip, buckets in ip_time_buckets.items():
+            if not buckets:
+                continue
+            counts = list(buckets.values())
+            mean = sum(counts) / len(counts)
+            if len(counts) >= 2 and mean > 0:
+                std_dev = (sum((c - mean) ** 2 for c in counts) / len(counts)) ** 0.5
+                threshold = mean + max(3 * std_dev, 10)
+                for bucket_time, count in buckets.items():
+                    if count > threshold and count >= 20:
+                        anomalies.append(LogAnomaly(
+                            line_number=0,
+                            entry=LogEntryModel(
+                                source=ip,
+                                message=f"Request spike from {ip}: {count} requests in 1 minute at {bucket_time}",
+                                level="WARNING",
+                            ),
+                            reason=f"Request rate spike: {count} req/min from {ip} (normal avg: {mean:.0f}/min)",
+                            severity="high" if count > threshold * 2 else "medium",
+                            confidence=min(0.92, 0.6 + (count - threshold) / 100),
+                        ))
+                        break  # one alert per IP
+
+        # --- Layer 6: Off-hours activity detection ---
+        hour_counts: Counter[int] = Counter()
+        off_hours_ips: Counter[str] = Counter()
+        for entry in entries:
+            ts = entry.timestamp
+            if ts:
+                try:
+                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    hour_counts[dt.hour] += 1
+                    if dt.hour < 6 or dt.hour >= 22:
+                        ip = entry.metadata.get("ip", entry.source)
+                        if ip:
+                            off_hours_ips[ip] += 1
+                except (ValueError, TypeError):
+                    pass
+
+        total_entries = len(entries)
+        if total_entries > 50:
+            daytime = sum(hour_counts[h] for h in range(6, 22))
+            nighttime = sum(hour_counts[h] for h in list(range(0, 6)) + list(range(22, 24)))
+            if daytime > 0 and nighttime > 0:
+                night_ratio = nighttime / total_entries
+                if night_ratio > 0.3:
+                    anomalies.append(LogAnomaly(
+                        line_number=0,
+                        entry=LogEntryModel(
+                            message=f"Unusual off-hours activity: {nighttime} events ({night_ratio:.0%}) between 22:00-06:00",
+                            level="WARNING",
+                        ),
+                        reason=f"High off-hours activity: {night_ratio:.0%} of traffic outside business hours",
+                        severity="medium",
+                        confidence=min(0.85, 0.5 + night_ratio),
+                    ))
+
+        for ip, count in off_hours_ips.most_common(5):
+            if count >= 10:
+                anomalies.append(LogAnomaly(
+                    line_number=0,
+                    entry=LogEntryModel(
+                        source=ip,
+                        message=f"{ip} generated {count} requests during off-hours (22:00-06:00)",
+                        level="WARNING",
+                    ),
+                    reason=f"Off-hours activity from {ip}: {count} requests between 22:00-06:00",
+                    severity="medium",
+                    confidence=min(0.80, 0.4 + count * 0.03),
+                ))
+
+        # --- Layer 7: Oversized request/response detection ---
+        for idx, entry in enumerate(entries):
+            size = entry.metadata.get("bytes_sent") or entry.metadata.get("body_bytes_sent")
+            if isinstance(size, (int, float)) and size > 10_000_000:
+                if (idx + 1) not in existing_lines:
+                    anomalies.append(LogAnomaly(
+                        line_number=idx + 1, entry=entry,
+                        reason=f"Unusually large response: {size / 1_000_000:.1f} MB",
+                        severity="medium", confidence=0.70,
+                    ))
 
         severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
         anomalies.sort(key=lambda a: (severity_order.get(a.severity, 99), -a.confidence))
@@ -307,18 +420,29 @@ class LogService:
         )
         await conn.commit()
 
-    async def get_history(self) -> list[dict]:
-        """Retrieve past log analysis records."""
+    async def get_history(self, page: int = 1, per_page: int = 20, search: str = "") -> dict:
+        """Retrieve past log analysis records with pagination."""
         conn = await db.get_connection()
+        offset = (page - 1) * per_page
+        params: list = ["log_analysis"]
+        where = "WHERE module = ?"
+        if search:
+            where += " AND target LIKE ?"
+            params.append(f"%{search}%")
+        count_cursor = await conn.execute(f"SELECT COUNT(*) as cnt FROM scan_history {where}", params)
+        total = (await count_cursor.fetchone())["cnt"]
         cursor = await conn.execute(
-            "SELECT id, module, target, status, started_at, completed_at, result_count "
-            "FROM scan_history WHERE module = ? ORDER BY started_at DESC LIMIT 50",
-            ("log_analysis",),
+            f"SELECT id, module, target, status, started_at, completed_at, result_count "
+            f"FROM scan_history {where} ORDER BY started_at DESC LIMIT ? OFFSET ?",
+            params + [per_page, offset],
         )
         rows = await cursor.fetchall()
-        return [
-            {"id": row["id"], "module": row["module"], "target": row["target"],
-             "status": row["status"], "started_at": row["started_at"],
-             "completed_at": row["completed_at"], "result_count": row["result_count"]}
-            for row in rows
-        ]
+        return {
+            "scans": [
+                {"id": row["id"], "module": row["module"], "target": row["target"],
+                 "status": row["status"], "started_at": row["started_at"],
+                 "completed_at": row["completed_at"], "result_count": row["result_count"]}
+                for row in rows
+            ],
+            "total": total, "page": page, "per_page": per_page,
+        }

@@ -9,6 +9,7 @@ import logging
 from typing import Any, Optional
 
 from backend.models.osint import ShodanHostResult
+from backend.utils.rate_limiter import rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class ShodanClient:
             return self._api.host(ip)
 
         try:
+            await rate_limiter.acquire("shodan")
             data = await loop.run_in_executor(None, _query)
             vulns_raw = data.get("vulns", [])
             if isinstance(vulns_raw, dict):
@@ -96,6 +98,7 @@ class ShodanClient:
             return self._api.dns.domain_info(domain)
 
         try:
+            await rate_limiter.acquire("shodan")
             return await loop.run_in_executor(None, _query)
         except Exception as exc:
             logger.error("Shodan domain lookup failed for %s: %s", domain, exc)

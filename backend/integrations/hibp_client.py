@@ -11,6 +11,7 @@ from typing import Any
 import httpx
 
 from backend.models.osint import BreachResult
+from backend.utils.rate_limiter import rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +35,8 @@ class HIBPClient:
         return headers
 
     async def _rate_limit(self) -> None:
-        """Enforce HIBP rate limit of 1.5s between requests."""
-        now = asyncio.get_event_loop().time()
-        elapsed = now - self._last_request_time
-        if elapsed < _RATE_LIMIT_DELAY:
-            await asyncio.sleep(_RATE_LIMIT_DELAY - elapsed)
-        self._last_request_time = asyncio.get_event_loop().time()
+        """Enforce HIBP rate limit via the global rate limiter."""
+        await rate_limiter.acquire("hibp")
 
     def _parse_breach(self, data: dict[str, Any]) -> BreachResult:
         """Parse a single breach record from the HIBP API response."""

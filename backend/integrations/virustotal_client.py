@@ -10,6 +10,7 @@ from typing import Any
 import httpx
 
 from backend.models.osint import VirusTotalResult
+from backend.utils.rate_limiter import rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class VirusTotalClient:
             Parsed JSON response dict.
         """
         try:
+            await rate_limiter.acquire("virustotal")
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(
                     _VT_API_BASE + endpoint,

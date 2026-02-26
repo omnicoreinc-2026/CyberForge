@@ -9,6 +9,8 @@ from typing import Any
 
 import httpx
 
+from backend.utils.rate_limiter import rate_limiter
+
 logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://api.abuseipdb.com/api/v2"
@@ -55,6 +57,7 @@ class AbuseIPDBClient:
     async def check_ip(self, ip: str) -> dict[str, Any]:
         """Check an IP address reputation on AbuseIPDB."""
         try:
+            await rate_limiter.acquire("abuseipdb")
             async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
                 response = await client.get(
                     f"{_BASE_URL}/check",
@@ -110,6 +113,7 @@ class AbuseIPDBClient:
         max_age = max(1, min(365, max_age))
 
         try:
+            await rate_limiter.acquire("abuseipdb")
             async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
                 response = await client.get(
                     f"{_BASE_URL}/reports",

@@ -98,26 +98,33 @@ async def geoip_lookup(request: IpRequest) -> dict[str, Any]:
 
 
 @router.get("/history", summary="Threat intel scan history")
-async def threat_history() -> dict[str, Any]:
-    """List past threat intelligence scans."""
+async def threat_history(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
+    search: str = Query(default="", max_length=200),
+) -> dict[str, Any]:
+    """List past threat intelligence scans with pagination and optional target search."""
     conn = await db.get_connection()
+    offset = (page - 1) * per_page
+    params: list = ["threat_%"]
+    where = "WHERE module LIKE ?"
+    if search:
+        where += " AND target LIKE ?"
+        params.append(f"%{search}%")
+    count_cursor = await conn.execute(f"SELECT COUNT(*) as cnt FROM scan_history {where}", params)
+    total = (await count_cursor.fetchone())["cnt"]
     cursor = await conn.execute(
-        "SELECT id, module, target, status, started_at, completed_at, result_count "
-        "FROM scan_history WHERE module LIKE ? ORDER BY started_at DESC LIMIT 50",
-        ("threat_%",),
+        f"SELECT id, module, target, status, started_at, completed_at, result_count "
+        f"FROM scan_history {where} ORDER BY started_at DESC LIMIT ? OFFSET ?",
+        params + [per_page, offset],
     )
     rows = await cursor.fetchall()
     return {
         "scans": [
-            {
-                "id": row["id"],
-                "module": row["module"],
-                "target": row["target"],
-                "status": row["status"],
-                "started_at": row["started_at"],
-                "completed_at": row["completed_at"],
-                "result_count": row["result_count"],
-            }
+            {"id": row["id"], "module": row["module"], "target": row["target"],
+             "status": row["status"], "started_at": row["started_at"],
+             "completed_at": row["completed_at"], "result_count": row["result_count"]}
             for row in rows
-        ]
+        ],
+        "total": total, "page": page, "per_page": per_page,
     }

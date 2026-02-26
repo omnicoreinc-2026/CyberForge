@@ -104,41 +104,54 @@
   <h3>{{ scan.scan_type }} &mdash; {{ scan.target }}</h3>
   <p><strong>Severity:</strong> <span class="sev-badge sev-{{ scan.severity }}">{{ scan.severity }}</span> &nbsp; <strong>Date:</strong> {{ scan.created_at }} &nbsp; <strong>Findings:</strong> {{ scan.results | length }}</p>
   {% if scan.results %}
-  <table>
-    <thead><tr><th>#</th><th>Finding</th><th>Severity</th><th>Details</th></tr></thead>
-    <tbody>
-    {% for finding in scan.results[:30] %}
-    <tr>
-      <td>{{ loop.index }}</td>
-      <td>
-        {% if finding is mapping %}
-          {{ finding.get("name", finding.get("title", finding.get("host", "-"))) }}
-        {% else %}
-          {{ finding | string | truncate(60) }}
+    {% if scan.results is mapping %}
+    <table>
+      <thead><tr><th>Key</th><th>Value</th></tr></thead>
+      <tbody>
+      {% for key, val in scan.results.items() %}
+        {% if val is not mapping and val is not iterable or val is string %}
+        <tr><td><strong>{{ key }}</strong></td><td>{{ val }}</td></tr>
         {% endif %}
-      </td>
-      <td>
-        {% if finding is mapping %}
-          {% set fsev = finding.get("severity", finding.get("risk", "info")) | lower %}
-          <span class="sev-badge sev-{{ fsev }}">{{ fsev }}</span>
-        {% else %}
-          <span class="sev-badge sev-info">info</span>
-        {% endif %}
-      </td>
-      <td>
-        {% if finding is mapping %}
-          {{ finding.get("description", finding.get("info", "-")) | truncate(80) }}
-        {% else %}
-          -
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-    {% if scan.results | length > 30 %}
-    <tr><td colspan="4" style="text-align:center;color:#6b7280;font-style:italic;">... and {{ scan.results | length - 30 }} more findings</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% elif scan.results is iterable %}
+    <table>
+      <thead><tr><th>#</th><th>Finding</th><th>Severity</th><th>Details</th></tr></thead>
+      <tbody>
+      {% for finding in scan.results[:30] %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+          {% if finding is mapping %}
+            {{ finding.get("name", finding.get("title", finding.get("header", finding.get("host", "-")))) }}
+          {% else %}
+            {{ finding | string | truncate(60) }}
+          {% endif %}
+        </td>
+        <td>
+          {% if finding is mapping %}
+            {% set fsev = finding.get("severity", finding.get("risk", "info")) | lower %}
+            <span class="sev-badge sev-{{ fsev }}">{{ fsev }}</span>
+          {% else %}
+            <span class="sev-badge sev-info">info</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if finding is mapping %}
+            {{ finding.get("description", finding.get("info", "-")) | truncate(80) }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if scan.results | length > 30 %}
+      <tr><td colspan="4" style="text-align:center;color:#6b7280;font-style:italic;">... and {{ scan.results | length - 30 }} more findings</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
     {% endif %}
-    </tbody>
-  </table>
   {% endif %}
   {% endfor %}
 </div>

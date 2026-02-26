@@ -8,7 +8,7 @@ import logging
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 
 from backend.models.logs import LogAnalysisRequest
 from backend.routers.websocket import manager
@@ -92,7 +92,10 @@ async def upload_log_file(
 
 
 @router.get("/history", summary="Log analysis history")
-async def log_history() -> dict[str, Any]:
-    """List past log analysis runs."""
-    history = await _service.get_history()
-    return {"scans": history}
+async def log_history(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
+    search: str = Query(default="", max_length=200),
+) -> dict[str, Any]:
+    """List past log analysis runs with pagination."""
+    return await _service.get_history(page=page, per_page=per_page, search=search)

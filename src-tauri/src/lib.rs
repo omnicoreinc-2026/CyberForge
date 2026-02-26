@@ -13,17 +13,21 @@ pub fn run() {
                 )?;
             }
 
-            // Spawn the Python backend sidecar
+            // Spawn the Python backend sidecar (non-fatal in dev mode)
             let shell = app.shell();
-            let sidecar = shell
-                .sidecar("cyberforge-backend")
-                .expect("failed to create sidecar command");
-
-            let (mut _rx, _child) = sidecar
-                .spawn()
-                .expect("failed to spawn backend sidecar");
-
-            log::info!("CyberForge backend sidecar started");
+            match shell.sidecar("cyberforge-backend") {
+                Ok(sidecar) => match sidecar.spawn() {
+                    Ok((_rx, _child)) => {
+                        log::info!("CyberForge backend sidecar started");
+                    }
+                    Err(e) => {
+                        log::warn!("Backend sidecar spawn failed (already running?): {e}");
+                    }
+                },
+                Err(e) => {
+                    log::warn!("Backend sidecar not found (dev mode?): {e}");
+                }
+            }
 
             Ok(())
         })

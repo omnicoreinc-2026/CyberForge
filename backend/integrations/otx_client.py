@@ -9,6 +9,8 @@ from typing import Any
 
 import httpx
 
+from backend.utils.rate_limiter import rate_limiter
+
 logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://otx.alienvault.com/api/v1"
@@ -27,6 +29,7 @@ class OtxClient:
 
     async def _get(self, path: str) -> dict[str, Any]:
         """Execute an authenticated GET request against the OTX API."""
+        await rate_limiter.acquire("otx")
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             response = await client.get(
                 f"{_BASE_URL}{path}",
