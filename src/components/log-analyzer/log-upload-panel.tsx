@@ -183,7 +183,7 @@ export function LogUploadPanel({ onAnalysisComplete }: LogUploadPanelProps) {
             'ml-auto flex items-center gap-2 rounded-lg bg-accent px-6 py-2.5',
             'text-sm font-medium text-bg-primary transition-opacity',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            'hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]',
+            'hover-glow-accent',
           )}
         >
           {loading ? (

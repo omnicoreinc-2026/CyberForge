@@ -93,20 +93,20 @@ class ReconService:
         ports: str,
         scan_id: str,
         emitter: ProgressEmitter,
-    ) -> list[PortScanResult]:
-        """Run port scan and store results."""
+    ) -> tuple[list[PortScanResult], int]:
+        """Run port scan and store results. Returns (results, hosts_alive)."""
         await self._store_history(scan_id, "recon_ports", target, "running", 0)
         try:
-            results = await scan_ports(target, ports=ports, progress_emitter=emitter)
+            results, hosts_alive = await scan_ports(target, ports=ports, progress_emitter=emitter)
             result_dicts = [r.model_dump() for r in results]
             await self._store_result(scan_id, "recon_ports", target, result_dicts)
             await self._store_history(scan_id, "recon_ports", target, "completed", len(results))
-            return results
+            return results, hosts_alive
         except Exception as exc:
             logger.error("Port scan failed: %s", exc)
             await self._store_history(scan_id, "recon_ports", target, "error", 0)
             await emitter.emit(100, "error", str(exc), "port_scan")
-            return []
+            return [], 0
 
     async def run_whois(self, domain: str) -> WhoisResult:
         """Run WHOIS lookup (no progress emitter needed -- fast operation)."""
@@ -142,7 +142,7 @@ class ReconService:
 
             # Phase 2: Port scan (30-55%)
             await emitter.emit(25, "running", "Starting port scan", "recon_full")
-            result.ports = await scan_ports(target, ports="1-1000")
+            result.ports, _ = await scan_ports(target, ports="1-1000")
             await emitter.emit(50, "running", "Port scan complete", "recon_full")
 
             # Phase 3: WHOIS (55-65%)

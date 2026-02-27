@@ -1,37 +1,40 @@
 import { Link } from 'react-router-dom';
 import { Search, Bell, Settings, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMode } from '@/contexts/mode-context';
+import { MODE_CONFIG } from '@/config/mode-data';
 
 interface HeaderProps {
   backendConnected?: boolean;
 }
 
 export function Header({ backendConnected = false }: HeaderProps) {
+  const { mode } = useMode();
+  const config = MODE_CONFIG[mode];
+
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-bg-secondary/50 px-6">
       {/* Left: Logo */}
       <div className="flex items-center gap-2">
         <h1 className="text-lg font-bold tracking-wide">
-          <span className="text-accent" style={{ textShadow: '0 0 20px rgba(0, 212, 255, 0.5)' }}>
-            Cyber
+          <span className="text-accent" style={{ textShadow: '0 0 20px var(--color-accent-glow)' }}>
+            {config.appNamePrefix}
           </span>
-          <span className="text-text-primary">Forge</span>
+          <span className="text-text-primary">{config.appNameSuffix}</span>
         </h1>
       </div>
 
       {/* Center: Global search */}
       <div className="flex max-w-md flex-1 items-center justify-center px-8">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+        <div className={cn(
+          'flex w-full items-center gap-2 rounded-lg border border-border bg-bg-primary/50 px-3 py-2',
+          'transition-colors focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/20',
+        )}>
+          <Search className="h-4 w-4 shrink-0 text-text-muted" />
           <input
             type="text"
             placeholder="Search targets, CVEs, IOCs..."
-            className={cn(
-              'w-full rounded-lg border border-border bg-bg-primary/50 py-2 pl-10 pr-4',
-              'text-sm text-text-primary placeholder:text-text-muted',
-              'outline-none transition-colors',
-              'focus:border-accent/50 focus:ring-1 focus:ring-accent/20',
-            )}
+            className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
           />
         </div>
       </div>

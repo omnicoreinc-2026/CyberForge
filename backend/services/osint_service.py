@@ -154,25 +154,41 @@ class OsintService:
                         vt_result = await self._virustotal.scan_ip(target)
                     except Exception:
                         pass
+
             score = 0.0
             categories: list[str] = []
             details: dict[str, Any] = {}
-            if vt_result and vt_result.total > 0:
-                score = (vt_result.positives / vt_result.total) * 100
-                if vt_result.positives > 0:
-                    categories.append("malicious")
-                details["vt_positives"] = vt_result.positives
-                details["vt_total"] = vt_result.total
+
+            if not self._virustotal:
+                # No API key configured
+                details["Status"] = "VirusTotal API key not configured"
+                details["Action"] = "Add your API key in Settings to enable reputation checks"
+            elif vt_result and vt_result.total > 0:
+                # Score = reputation quality (100 = clean, 0 = fully malicious)
+                threat_pct = (vt_result.positives / vt_result.total) * 100
+                score = round(100.0 - threat_pct, 2)
+                categories.append("Clean" if vt_result.positives == 0 else "Malicious")
+                details["Detections"] = f"{vt_result.positives} / {vt_result.total} engines"
+                details["Source"] = "VirusTotal"
+                details["Target"] = target
+            elif vt_result is not None:
+                score = 50.0
+                details["Status"] = "No scan data returned by VirusTotal"
+                details["Source"] = "VirusTotal"
+            else:
+                details["Status"] = "VirusTotal lookup failed"
+
             result = ReputationResult(
                 target=target, reputation_score=round(score, 2),
                 categories=categories, details=details,
             )
+            # Severity based on how LOW the reputation score is
             severity = "info"
-            if score > 50:
+            if score < 20:
                 severity = "critical"
-            elif score > 20:
+            elif score < 40:
                 severity = "high"
-            elif score > 5:
+            elif score < 60:
                 severity = "medium"
             await self._store_result(
                 scan_id, "osint_reputation", target, [result.model_dump()], severity,

@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils';
+import { useMode } from '@/contexts/mode-context';
+import { MODE_CONFIG } from '@/config/mode-data';
 
 interface StatusBarProps {
   backendConnected?: boolean;
@@ -11,6 +13,9 @@ export function StatusBar({
   activeScans = 0,
   aiConfigured = false,
 }: StatusBarProps) {
+  const { mode } = useMode();
+  const config = MODE_CONFIG[mode];
+
   return (
     <footer className="flex h-8 shrink-0 items-center justify-between border-t border-border bg-bg-secondary/30 px-6 text-xs text-text-muted">
       {/* Left: Backend status */}
@@ -28,9 +33,9 @@ export function StatusBar({
         </span>
       </div>
 
-      {/* Center: Active scans */}
+      {/* Center: Active ops */}
       <div className="flex items-center gap-2">
-        <span>Active Scans: {activeScans}</span>
+        <span>{config.activeOpsLabel}: {activeScans}</span>
       </div>
 
       {/* Right: AI status */}

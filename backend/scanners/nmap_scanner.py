@@ -5,6 +5,7 @@ Falls back to an asyncio socket-based scanner when nmap is unavailable.
 """
 
 import asyncio
+import ipaddress
 import logging
 import shutil
 from typing import Optional
@@ -42,6 +43,42 @@ _COMMON_SERVICES: dict[int, str] = {
 }
 
 
+def _expand_hosts(target: str) -> list[str]:
+    """Expand an IP range spec into a list of individual host strings.
+
+    Handles single IPs, CIDR blocks (up to /16), and nmap last-octet ranges.
+    """
+    target = target.strip()
+    # Single IP
+    try:
+        ipaddress.ip_address(target)
+        return [target]
+    except ValueError:
+        pass
+    # CIDR block
+    try:
+        network = ipaddress.ip_network(target, strict=False)
+        if network.num_addresses <= 65536:
+            return [str(h) for h in network.hosts()] or [str(network.network_address)]
+        return []
+    except ValueError:
+        pass
+    # Nmap last-octet dash range: A.B.C.start-end
+    if "-" in target:
+        left, _, right = target.partition("-")
+        try:
+            base = ipaddress.IPv4Address(left.strip())
+            end = int(right.strip())
+            prefix = str(base).rsplit(".", 1)[0]
+            start = int(str(base).rsplit(".", 1)[1])
+            if 0 <= end <= 255 and start <= end:
+                return [f"{prefix}.{i}" for i in range(start, end + 1)]
+        except (ValueError, AttributeError):
+            pass
+    logger.warning("Could not expand target: %s", target)
+    return []
+
+
 def _parse_port_range(ports: str) -> list[int]:
     """Parse a port specification string into a list of port numbers.
 
@@ -64,7 +101,8 @@ def _parse_port_range(ports: str) -> list[int]:
 async def _scan_port_socket(target: str, port: int, timeout: float = 2.0) -> PortScanResult | None:
     """Probe a single port using asyncio socket connection.
 
-    Returns a PortScanResult if the port is open, otherwise None.
+    Returns an open PortScanResult on success, a closed PortScanResult when
+    the host is alive but the port is closed (TCP RST), or None on timeout.
     """
     try:
         _, writer = await asyncio.wait_for(
@@ -74,8 +112,11 @@ async def _scan_port_socket(target: str, port: int, timeout: float = 2.0) -> Por
         writer.close()
         await writer.wait_closed()
         service = _COMMON_SERVICES.get(port, "")
-        return PortScanResult(port=port, state="open", service=service)
-    except (asyncio.TimeoutError, OSError, ConnectionRefusedError):
+        return PortScanResult(host=target, port=port, state="open", service=service)
+    except ConnectionRefusedError:
+        # Host is alive but port is closed (TCP RST received)
+        return PortScanResult(host=target, port=port, state="closed", service="")
+    except (asyncio.TimeoutError, OSError):
         return None
     except Exception:
         return None
@@ -85,16 +126,18 @@ async def _scan_with_nmap(
     target: str,
     ports: str,
     progress_emitter: Optional[ProgressEmitter],
-) -> list[PortScanResult]:
+) -> tuple[list[PortScanResult], int]:
     """Run a port scan using python-nmap.
 
     Executes nmap in a thread to avoid blocking the event loop.
+    Returns (open_results, hosts_alive_count).
     """
     results: list[PortScanResult] = []
 
     def _do_nmap_scan() -> "nmap.PortScanner":
         nm = nmap.PortScanner()
-        nm.scan(hosts=target, ports=ports, arguments="-sV -T4 --open")
+        # No --open so all discovered hosts appear in all_hosts()
+        nm.scan(hosts=target, ports=ports, arguments="-sV -T4")
         return nm
 
     loop = asyncio.get_running_loop()
@@ -104,71 +147,83 @@ async def _scan_with_nmap(
 
     try:
         nm = await loop.run_in_executor(None, _do_nmap_scan)
+        hosts_alive = len(nm.all_hosts())
 
         for host in nm.all_hosts():
             for proto in nm[host].all_protocols():
                 port_list = sorted(nm[host][proto].keys())
                 for port in port_list:
                     info = nm[host][proto][port]
-                    results.append(
-                        PortScanResult(
-                            port=port,
-                            state=info.get("state", "unknown"),
-                            service=info.get("name", ""),
-                            version=info.get("version", ""),
+                    if info.get("state") == "open":
+                        results.append(
+                            PortScanResult(
+                                host=host,
+                                port=port,
+                                state="open",
+                                service=info.get("name", ""),
+                                version=info.get("version", ""),
+                            )
                         )
-                    )
     except Exception as exc:
         logger.error("nmap scan failed: %s", exc)
+        hosts_alive = 0
 
-    return results
+    return results, hosts_alive
 
 
 async def _scan_with_sockets(
     target: str,
     ports: str,
     progress_emitter: Optional[ProgressEmitter],
-) -> list[PortScanResult]:
+) -> tuple[list[PortScanResult], int]:
     """Run a port scan using pure-Python async sockets.
 
-    Scans ports in batches to control concurrency.
+    Expands IP ranges and scans ports in batches to control concurrency.
+    Returns (open_results, hosts_alive_count). A host is considered alive
+    if any port returns open or closed (TCP RST) rather than timing out.
     """
-    results: list[PortScanResult] = []
+    open_results: list[PortScanResult] = []
+    alive_hosts: set[str] = set()
+    hosts = _expand_hosts(target)
     port_list = _parse_port_range(ports)
-    total = len(port_list)
+    total = len(hosts) * len(port_list)
 
     if total == 0:
-        return results
+        return open_results, 0
 
     batch_size = 100
     completed = 0
 
-    for i in range(0, total, batch_size):
-        batch = port_list[i : i + batch_size]
-        tasks = [_scan_port_socket(target, port) for port in batch]
-        batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+    for host in hosts:
+        for i in range(0, len(port_list), batch_size):
+            batch = port_list[i : i + batch_size]
+            tasks = [_scan_port_socket(host, port) for port in batch]
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        for result in batch_results:
-            if isinstance(result, PortScanResult) and result is not None:
-                results.append(result)
+            for result in batch_results:
+                if isinstance(result, PortScanResult):
+                    # Any TCP response (open or RST) means host is alive
+                    alive_hosts.add(result.host)
+                    if result.state == "open":
+                        open_results.append(result)
 
-        completed += len(batch)
-        if progress_emitter:
-            pct = int((completed / total) * 90) + 5  # 5-95%
-            await progress_emitter.emit(
-                pct, "running",
-                f"Scanning ports: {completed}/{total} checked, {len(results)} open",
-                "port_scan",
-            )
+            completed += len(batch)
+            if progress_emitter:
+                pct = int((completed / total) * 90) + 5  # 5-95%
+                await progress_emitter.emit(
+                    pct, "running",
+                    f"Scanning {host}: {completed}/{total} checked, {len(open_results)} open, {len(alive_hosts)} alive",
+                    "port_scan",
+                )
 
-    return results
+    return open_results, len(alive_hosts)
 
 
 async def scan_ports(
     target: str,
     ports: str = "1-1000",
     progress_emitter: Optional[ProgressEmitter] = None,
-) -> list[PortScanResult]:
+) -> tuple[list[PortScanResult], int]:
     """Scan ports on *target*, preferring nmap with socket fallback.
 
     Args:
@@ -177,24 +232,24 @@ async def scan_ports(
         progress_emitter: Optional emitter for real-time progress updates.
 
     Returns:
-        List of PortScanResult for open/discovered ports.
+        Tuple of (open_port_results, hosts_alive_count).
     """
     if progress_emitter:
         await progress_emitter.emit(0, "running", f"Starting port scan on {target}", "port_scan")
 
     if _NMAP_AVAILABLE:
         logger.info("Using nmap for port scan of %s ports %s", target, ports)
-        results = await _scan_with_nmap(target, ports, progress_emitter)
+        results, hosts_alive = await _scan_with_nmap(target, ports, progress_emitter)
     else:
         logger.info("Using socket scanner for %s ports %s", target, ports)
-        results = await _scan_with_sockets(target, ports, progress_emitter)
+        results, hosts_alive = await _scan_with_sockets(target, ports, progress_emitter)
 
     if progress_emitter:
         await progress_emitter.emit(
             100, "completed",
-            f"Port scan complete: {len(results)} open ports found",
+            f"Port scan complete: {len(results)} open ports, {hosts_alive} hosts alive",
             "port_scan",
         )
 
-    logger.info("Port scan of %s: %d open ports", target, len(results))
-    return results
+    logger.info("Port scan of %s: %d open ports, %d hosts alive", target, len(results), hosts_alive)
+    return results, hosts_alive

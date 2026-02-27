@@ -13,6 +13,7 @@ export interface SubdomainScanResponse {
 export type PortState = 'open' | 'closed' | 'filtered';
 
 export interface PortResult {
+  host: string;
   port: number;
   state: PortState;
   service: string;
@@ -24,6 +25,7 @@ export interface PortScanResponse {
   portRange: string;
   total: number;
   openPorts: number;
+  hostsAlive: number;
   ports: PortResult[];
 }
 

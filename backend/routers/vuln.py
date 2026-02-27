@@ -26,7 +26,7 @@ def _get_api_key(service: str) -> str:
     """Retrieve an API key from the OS keyring."""
     try:
         import keyring
-        key = keyring.get_password("cyberforge", service)
+        key = keyring.get_password("cyberlancer", service)
         return key or ""
     except Exception:
         return ""

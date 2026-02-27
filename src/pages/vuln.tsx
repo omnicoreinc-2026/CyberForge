@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bug, ShieldCheck, Lock, Search, Package, Scan } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,8 +21,10 @@ const tabs: { id: VulnTab; label: string; icon: typeof Bug }[] = [
 ];
 
 export function VulnPage() {
+  const [searchParams] = useSearchParams();
+  const urlTarget = searchParams.get('target') ?? '';
   const [activeTab, setActiveTab] = useState<VulnTab>('headers');
-  const [globalTarget, setGlobalTarget] = useState('');
+  const [globalTarget, setGlobalTarget] = useState(urlTarget);
   const fullScanTriggerRef = useRef<string>('');
   const [fullScanRunning, setFullScanRunning] = useState(false);
   const [fullScanError, setFullScanError] = useState<string | null>(null);
@@ -61,7 +64,7 @@ export function VulnPage() {
         </div>
       </div>
 
-      <TargetInput onScan={handleGlobalScan} placeholder="Enter target for vulnerability scan..." />
+      <TargetInput onScan={handleGlobalScan} placeholder="Enter target for vulnerability scan..." initialValue={urlTarget} />
 
       <div className="flex items-center gap-1 overflow-x-auto rounded-lg border border-border bg-bg-secondary p-1">
         {tabs.map((tab) => (

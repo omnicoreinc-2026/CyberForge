@@ -20,6 +20,7 @@ class SubdomainResult(BaseModel):
 class PortScanResult(BaseModel):
     """A single port finding from a port scan."""
 
+    host: str = Field(default="", description="Host IP or hostname this port belongs to.")
     port: int = Field(..., ge=1, le=65535, description="Port number.")
     state: str = Field(..., description="Port state: open, closed, filtered.")
     service: str = Field(default="", description="Detected service name.")

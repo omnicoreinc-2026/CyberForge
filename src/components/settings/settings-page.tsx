@@ -419,7 +419,7 @@ function AiProviderTab({ appSettings, onUpdate }: AiProviderTabProps) {
               className={cn(
                 'glass-card flex items-center gap-3 p-4 cursor-pointer text-left transition-all',
                 appSettings.ai_provider === provider.id
-                  ? 'border-accent/40 bg-accent-dim shadow-[inset_0_0_0_1px_rgba(0,212,255,0.2)]'
+                  ? 'border-accent/40 bg-accent-dim shadow-[inset_0_0_0_1px_var(--color-accent-dim)]'
                   : '',
               )}
             >
@@ -559,7 +559,7 @@ function GeneralTab({ appSettings, onUpdate }: GeneralTabProps) {
               className={cn(
                 'glass-card flex items-center gap-2 px-4 py-2.5 cursor-pointer text-sm font-medium transition-all',
                 appSettings.theme === theme
-                  ? 'border-accent/40 bg-accent-dim text-accent shadow-[inset_0_0_0_1px_rgba(0,212,255,0.2)]'
+                  ? 'border-accent/40 bg-accent-dim text-accent shadow-[inset_0_0_0_1px_var(--color-accent-dim)]'
                   : 'text-text-secondary',
               )}
             >
@@ -616,7 +616,7 @@ function GeneralTab({ appSettings, onUpdate }: GeneralTabProps) {
       <div className="border-t border-border pt-4">
         <div className="flex items-center gap-2 text-xs text-text-muted">
           <Info className="h-3.5 w-3.5" />
-          <span>CyberForge v0.1.0</span>
+          <span>CyberLancer v0.1.0</span>
           <span className="text-text-muted/50">|</span>
           <span>API: localhost:8008</span>
         </div>

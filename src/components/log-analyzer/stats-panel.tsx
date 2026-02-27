@@ -8,6 +8,8 @@ import {
 import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { LogStatistics } from '@/types/log';
+import { useMode } from '@/contexts/mode-context';
+import { MODE_COLORS } from '@/config/mode-data';
 
 interface StatsPanelProps {
   statistics: LogStatistics | null;
@@ -31,6 +33,9 @@ const itemVariants = {
 };
 
 export function StatsPanel({ statistics }: StatsPanelProps) {
+  const { mode } = useMode();
+  const accentColor = MODE_COLORS[mode].accent;
+
   const pieData = useMemo(() => {
     if (!statistics?.level_distribution) return [];
     return Object.entries(statistics.level_distribution).map(([name, value]) => ({
@@ -153,8 +158,8 @@ export function StatsPanel({ statistics }: StatsPanelProps) {
             <AreaChart data={timeData}>
               <defs>
                 <linearGradient id="logTimeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#00d4ff" stopOpacity={0} />
+                  <stop offset="5%" stopColor={accentColor} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={accentColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -164,7 +169,7 @@ export function StatsPanel({ statistics }: StatsPanelProps) {
                 contentStyle={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '12px' }}
                 itemStyle={{ color: '#f1f5f9' }}
               />
-              <Area type="monotone" dataKey="count" stroke="#00d4ff" fill="url(#logTimeGradient)" strokeWidth={2} />
+              <Area type="monotone" dataKey="count" stroke={accentColor} fill="url(#logTimeGradient)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
@@ -185,7 +190,7 @@ export function StatsPanel({ statistics }: StatsPanelProps) {
                 contentStyle={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '12px' }}
                 itemStyle={{ color: '#f1f5f9' }}
               />
-              <Bar dataKey="count" fill="#00d4ff" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="count" fill={accentColor} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (

@@ -24,7 +24,7 @@ from backend.models.recon import (
 from backend.routers.websocket import manager
 from backend.services.recon_service import ReconService
 from backend.utils.progress import ProgressEmitter
-from backend.utils.validators import sanitize_input, validate_domain, validate_ip, validate_url
+from backend.utils.validators import sanitize_input, validate_domain, validate_ip, validate_ip_range, validate_url
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/recon", tags=["recon"])
@@ -64,19 +64,19 @@ async def subdomain_scan(request: ScanRequest) -> dict[str, Any]:
 async def port_scan(request: PortScanRequest) -> dict[str, Any]:
     """Scan ports on the given target."""
     target = sanitize_input(request.target)
-    if not (validate_ip(target) or validate_domain(target)):
-        raise HTTPException(status_code=400, detail="Invalid target (IP or domain required)")
+    if not (validate_ip_range(target) or validate_domain(target)):
+        raise HTTPException(status_code=400, detail="Invalid target (IP, IP range, CIDR, or domain required)")
     scan_id = str(uuid4())
     emitter = ProgressEmitter(manager, scan_id)
-    results = await _service.run_port_scan(target, request.resolved_ports, scan_id, emitter)
-    open_ports = [r for r in results if r.state == "open"]
+    results, hosts_alive = await _service.run_port_scan(target, request.resolved_ports, scan_id, emitter)
     return {
         "scan_id": scan_id,
         "target": target,
         "portRange": request.resolved_ports,
         "ports": [r.model_dump() for r in results],
         "total": len(results),
-        "openPorts": len(open_ports),
+        "openPorts": len(results),
+        "hostsAlive": hosts_alive,
     }
 
 

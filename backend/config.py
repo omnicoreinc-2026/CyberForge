@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     API_HOST: str = "127.0.0.1"
     API_PORT: int = 8008
-    DB_PATH: str = "./data/cyberforge.db"
+    DB_PATH: str = "./data/cyberlancer.db"
     DEBUG: bool = True
 
     # CORS origins allowed to call the API

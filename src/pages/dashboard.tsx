@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Shield,
   Search,
   Globe,
   Bug,
@@ -29,6 +28,8 @@ import { cn, formatTimestamp } from '@/lib/utils';
 import { AnimatedCounter } from '@/components/shared/animated-counter';
 import { useDashboardStats } from '@/hooks/use-dashboard-stats';
 import type { RecentScan } from '@/hooks/use-dashboard-stats';
+import { useMode } from '@/contexts/mode-context';
+import { MODE_CONFIG } from '@/config/mode-data';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -54,35 +55,11 @@ interface ModuleCardConfig {
 /*  Static data                                                        */
 /* ------------------------------------------------------------------ */
 
-const statCards: StatCardConfig[] = [
-  {
-    key: 'total_scans',
-    label: 'Total Scans',
-    icon: Activity,
-    gradient: 'stat-gradient-scans',
-    iconColor: 'text-accent',
-  },
-  {
-    key: 'vulnerabilities_found',
-    label: 'Vulnerabilities Found',
-    icon: ShieldAlert,
-    gradient: 'stat-gradient-vulns',
-    iconColor: 'text-danger',
-  },
-  {
-    key: 'threats_detected',
-    label: 'Threats Detected',
-    icon: Radar,
-    gradient: 'stat-gradient-threats',
-    iconColor: 'text-high',
-  },
-  {
-    key: 'reports_generated',
-    label: 'Reports Generated',
-    icon: FileBarChart,
-    gradient: 'stat-gradient-reports',
-    iconColor: 'text-success',
-  },
+const statCardConfigs: Omit<StatCardConfig, 'label'>[] = [
+  { key: 'total_scans', icon: Activity, gradient: 'stat-gradient-scans', iconColor: 'text-accent' },
+  { key: 'vulnerabilities_found', icon: ShieldAlert, gradient: 'stat-gradient-vulns', iconColor: 'text-danger' },
+  { key: 'threats_detected', icon: Radar, gradient: 'stat-gradient-threats', iconColor: 'text-high' },
+  { key: 'reports_generated', icon: FileBarChart, gradient: 'stat-gradient-reports', iconColor: 'text-success' },
 ];
 
 const modules: ModuleCardConfig[] = [
@@ -92,6 +69,13 @@ const modules: ModuleCardConfig[] = [
     description: 'Port scanning, subdomain enumeration, and service detection.',
     icon: Search,
     moduleKey: 'recon',
+  },
+  {
+    path: '/exploit',
+    label: 'Exploit Arsenal',
+    description: 'SQLi, XSS, dir busting, nuclei templates, fuzzing, and credential testing.',
+    icon: Zap,
+    moduleKey: 'exploit',
   },
   {
     path: '/osint',
@@ -411,6 +395,8 @@ function QuickScanModal({
   const [target, setTarget] = useState('');
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const navigate = useNavigate();
+  const { mode } = useMode();
+  const modeConfig = MODE_CONFIG[mode];
 
   const scanModules = [
     { key: 'recon', label: 'Reconnaissance', icon: Search },
@@ -453,7 +439,7 @@ function QuickScanModal({
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
                 <Zap className="h-5 w-5 text-accent" />
-                Quick Scan
+                {modeConfig.quickActionLabel}
               </h3>
               <button
                 onClick={onClose}
@@ -513,7 +499,7 @@ function QuickScanModal({
                     : 'bg-border text-text-muted cursor-not-allowed',
                 )}
               >
-                Launch Scan
+                {modeConfig.quickActionVerb}
               </button>
             </div>
           </motion.div>
@@ -530,6 +516,19 @@ function QuickScanModal({
 export function DashboardPage() {
   const { stats, loading, error } = useDashboardStats();
   const [quickScanOpen, setQuickScanOpen] = useState(false);
+  const { mode, isLancer } = useMode();
+  const modeConfig = MODE_CONFIG[mode];
+
+  // Build mode-aware stat cards with labels from config
+  const statCards: StatCardConfig[] = statCardConfigs.map((c, i) => ({
+    ...c,
+    label: modeConfig.statLabels[i],
+  }));
+
+  // Filter modules by mode (exploit only in lancer)
+  const visibleModules = isLancer ? modules : modules.filter((m) => m.path !== '/exploit');
+
+  const DashIcon = modeConfig.dashboardIcon;
 
   // Build a map of module -> last activity timestamp from recent scans
   const moduleLastActivity: Record<string, string> = {};
@@ -561,11 +560,11 @@ export function DashboardPage() {
         {/* Page header */}
         <motion.div variants={cardVariants} className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className="h-7 w-7 text-accent" />
+            <DashIcon className="h-7 w-7 text-accent" />
             <div>
-              <h1 className="text-xl font-bold text-text-primary">Command Center</h1>
+              <h1 className="text-xl font-bold text-text-primary">{modeConfig.dashboardTitle}</h1>
               <p className="text-sm text-text-secondary">
-                CyberForge Security Operations Dashboard
+                {modeConfig.tagline}
               </p>
             </div>
           </div>
@@ -596,7 +595,7 @@ export function DashboardPage() {
             className="quick-action-btn flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-accent"
           >
             <Zap className="h-4 w-4" />
-            Quick Scan
+            {modeConfig.quickActionLabel}
           </button>
           <Link
             to="/reports"
@@ -620,10 +619,10 @@ export function DashboardPage() {
             variants={cardVariants}
             className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-muted"
           >
-            Modules
+            {modeConfig.moduleSectionTitle}
           </motion.h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {modules.map((mod, index) => (
+            {visibleModules.map((mod, index) => (
               <ModuleCard
                 key={mod.path}
                 config={mod}
@@ -637,7 +636,7 @@ export function DashboardPage() {
         {/* Recent activity section */}
         <motion.div variants={cardVariants}>
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-muted">
-            Recent Activity
+            {modeConfig.recentSectionTitle}
           </h2>
           <div className="glass-card p-5">
             {loading ? (
@@ -667,7 +666,7 @@ export function DashboardPage() {
                 <Activity className="h-10 w-10 text-text-muted mb-3" />
                 <p className="text-sm text-text-secondary">No recent activity</p>
                 <p className="text-xs text-text-muted mt-1">
-                  Run a scan to see results here
+                  {modeConfig.emptyStateText}
                 </p>
               </div>
             )}

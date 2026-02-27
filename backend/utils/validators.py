@@ -38,6 +38,37 @@ def validate_ip(ip: str) -> bool:
         return False
 
 
+def validate_ip_range(target: str) -> bool:
+    """Return True if *target* is a valid IP, CIDR block, or nmap-style dash range.
+
+    Accepts:
+        - Single IP:              192.168.1.1
+        - CIDR block:             10.0.0.0/24
+        - Last-octet dash range:  10.0.10.1-254
+    """
+    target = target.strip()
+    if validate_ip(target):
+        return True
+    # CIDR notation
+    try:
+        ipaddress.ip_network(target, strict=False)
+        return True
+    except ValueError:
+        pass
+    # Nmap last-octet dash range: A.B.C.start-end
+    if "-" in target:
+        left, _, right = target.partition("-")
+        try:
+            base = ipaddress.IPv4Address(left.strip())
+            end = int(right.strip())
+            start = int(str(base).rsplit(".", 1)[1])
+            if 0 <= end <= 255 and start <= end:
+                return True
+        except (ValueError, AttributeError):
+            pass
+    return False
+
+
 def validate_domain(domain: str) -> bool:
     """Return True if *domain* looks like a valid DNS domain name.
 

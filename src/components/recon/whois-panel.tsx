@@ -95,7 +95,7 @@ export function WhoisPanel({ externalTarget }: WhoisPanelProps) {
             'flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5',
             'text-sm font-medium text-bg-primary',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            'hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]',
+            'hover-glow-accent',
           )}
         >
           <Search className="h-4 w-4" />

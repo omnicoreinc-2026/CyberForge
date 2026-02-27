@@ -30,7 +30,7 @@ const severityConfig: Record<Severity, { label: string; colorClass: string }> = 
 };
 
 export function SeverityBadge({ severity, className }: SeverityBadgeProps) {
-  const config = severityConfig[severity];
+  const config = severityConfig[severity] ?? { label: severity, colorClass: 'bg-info/20 text-info border-info/30' };
 
   return (
     <span

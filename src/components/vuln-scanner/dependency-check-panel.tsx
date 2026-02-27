@@ -79,7 +79,7 @@ export function DependencyCheckPanel() {
               className={cn('w-full rounded-lg border border-border bg-bg-secondary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted font-mono outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/30 resize-none')} />
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => void handleAnalyze(pasteContent, 'pasted-content')}
               disabled={!pasteContent.trim()}
-              className={cn('flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-bg-primary disabled:cursor-not-allowed disabled:opacity-50 hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]')}>
+              className={cn('flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-bg-primary disabled:cursor-not-allowed disabled:opacity-50 hover-glow-accent')}>
               <FileText className="h-4 w-4" />Analyze Dependencies
             </motion.button>
           </div>

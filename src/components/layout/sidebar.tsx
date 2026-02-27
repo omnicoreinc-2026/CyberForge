@@ -1,39 +1,11 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Shield,
-  Search,
-  Globe,
-  Bug,
-  AlertTriangle,
-  FileText,
-  FileOutput,
-  Bot,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface NavItem {
-  path: string;
-  label: string;
-  icon: LucideIcon;
-}
-
-const navItems: NavItem[] = [
-  { path: '/', label: 'Dashboard', icon: Shield },
-  { path: '/recon', label: 'Recon', icon: Search },
-  { path: '/osint', label: 'OSINT', icon: Globe },
-  { path: '/vuln', label: 'Vuln Scanner', icon: Bug },
-  { path: '/threat', label: 'Threat Intel', icon: AlertTriangle },
-  { path: '/logs', label: 'Log Analyzer', icon: FileText },
-  { path: '/reports', label: 'Reports', icon: FileOutput },
-  { path: '/ai', label: 'AI Assistant', icon: Bot },
-  { path: '/settings', label: 'Settings', icon: Settings },
-];
+import { useMode } from '@/contexts/mode-context';
+import { MODE_CONFIG } from '@/config/mode-data';
+import { ModeToggle } from '@/components/shared/mode-toggle';
 
 const sidebarVariants = {
   expanded: { width: 240 },
@@ -42,6 +14,8 @@ const sidebarVariants = {
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const { mode } = useMode();
+  const navItems = MODE_CONFIG[mode].navItems;
 
   return (
     <motion.aside
@@ -63,7 +37,7 @@ export function Sidebar() {
                 'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 'hover:bg-accent-dim',
                 isActive
-                  ? 'bg-accent-dim text-accent shadow-[inset_0_0_0_1px_rgba(0,212,255,0.2)]'
+                  ? 'bg-accent-dim text-accent shadow-[inset_0_0_0_1px_var(--color-accent-dim)]'
                   : 'text-text-secondary hover:text-text-primary',
               )
             }
@@ -94,6 +68,11 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Mode toggle */}
+      <div className="border-t border-border px-3 py-2">
+        <ModeToggle collapsed={collapsed} />
+      </div>
 
       {/* Collapse toggle */}
       <div className="border-t border-border px-3 py-3">

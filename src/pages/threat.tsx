@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldAlert, Search, Shield, Rss, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,8 +23,10 @@ const containerVariants = {
 };
 
 export function ThreatPage() {
+  const [searchParams] = useSearchParams();
+  const urlTarget = searchParams.get('target') ?? '';
   const [activeTab, setActiveTab] = useState<ThreatTab>("ioc");
-  const [globalTarget, setGlobalTarget] = useState("");
+  const [globalTarget, setGlobalTarget] = useState(urlTarget);
 
   const handleGlobalScan = useCallback((t: string) => { setGlobalTarget(t); }, []);
 
@@ -37,7 +40,7 @@ export function ThreatPage() {
         </div>
       </div>
 
-      <TargetInput onScan={handleGlobalScan} placeholder="Enter target for threat intelligence scan..." />
+      <TargetInput onScan={handleGlobalScan} placeholder="Enter target for threat intelligence scan..." initialValue={urlTarget} />
 
       <div className="flex items-center gap-1 rounded-lg border border-border bg-bg-secondary p-1">
         {tabs.map((tab) => (

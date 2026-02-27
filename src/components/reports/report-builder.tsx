@@ -190,7 +190,7 @@ export function ReportBuilder() {
                   className={cn(
                     "flex flex-col gap-1 rounded-lg border p-4 text-left transition-all",
                     reportType === rt.id
-                      ? "border-accent bg-accent/10 shadow-[0_0_15px_rgba(0,212,255,0.1)]"
+                      ? "border-accent bg-accent/10 shadow-[0_0_15px_rgba(255,51,51,0.1)]"
                       : "border-border bg-bg-secondary hover:border-text-muted"
                   )}
                 >
@@ -377,7 +377,7 @@ export function ReportBuilder() {
               whileTap={{ scale: 0.95 }}
               onClick={() => void handleGenerate()}
               disabled={isGenerating}
-              className="flex items-center gap-2 rounded-lg bg-accent px-5 py-2 text-sm font-medium text-bg-primary hover:shadow-[0_0_20px_rgba(0,212,255,0.3)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-accent px-5 py-2 text-sm font-medium text-bg-primary hover-glow-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isGenerating ? (
                 <>
@@ -399,7 +399,7 @@ export function ReportBuilder() {
               whileTap={{ scale: 0.95 }}
               onClick={() => setStep((s) => Math.min(2, s + 1))}
               disabled={!canAdvance}
-              className="flex items-center gap-2 rounded-lg bg-accent px-5 py-2 text-sm font-medium text-bg-primary hover:shadow-[0_0_20px_rgba(0,212,255,0.3)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-accent px-5 py-2 text-sm font-medium text-bg-primary hover-glow-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
               <ChevronRight className="h-4 w-4" />

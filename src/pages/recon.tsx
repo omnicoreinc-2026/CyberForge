@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Globe, Wifi, FileText, Network, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,8 +25,10 @@ const containerVariants = {
 };
 
 export function ReconPage() {
+  const [searchParams] = useSearchParams();
+  const urlTarget = searchParams.get('target') ?? '';
   const [activeTab, setActiveTab] = useState<ReconTab>('subdomains');
-  const [globalTarget, setGlobalTarget] = useState('');
+  const [globalTarget, setGlobalTarget] = useState(urlTarget);
 
   const handleFullRecon = useCallback((t: string) => { setGlobalTarget(t); }, []);
 
@@ -39,7 +42,7 @@ export function ReconPage() {
         </div>
       </div>
 
-      <TargetInput onScan={handleFullRecon} placeholder="Enter target for full recon scan..." />
+      <TargetInput onScan={handleFullRecon} placeholder="Enter target for full recon scan..." initialValue={urlTarget} />
 
       <div className="flex items-center gap-1 rounded-lg border border-border bg-bg-secondary p-1">
         {tabs.map((tab) => (

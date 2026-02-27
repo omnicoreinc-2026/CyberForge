@@ -9,7 +9,7 @@ import { ApiClient } from '@/lib/api-client';
 export function Layout() {
   const [backendConnected, setBackendConnected] = useState(false);
   const [aiConfigured, setAiConfigured] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     const checkHealth = async () => {

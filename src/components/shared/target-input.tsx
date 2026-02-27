@@ -10,6 +10,7 @@ interface TargetInputProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  initialValue?: string;
 }
 
 const IP_REGEX = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/;
@@ -40,8 +41,9 @@ export function TargetInput({
   placeholder = 'Enter IP, domain, URL, or hash...',
   className,
   disabled = false,
+  initialValue = '',
 }: TargetInputProps) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(initialValue);
 
   const targetType = useMemo(() => detectTargetType(value), [value]);
 
@@ -99,7 +101,7 @@ export function TargetInput({
           'text-sm font-medium text-bg-primary',
           'transition-opacity',
           'disabled:cursor-not-allowed disabled:opacity-50',
-          'hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]',
+          'hover-glow-accent',
         )}
       >
         <Crosshair className="h-4 w-4" />

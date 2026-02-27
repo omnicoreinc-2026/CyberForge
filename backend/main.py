@@ -1,4 +1,4 @@
-"""CyberForge API -- FastAPI application entrypoint.
+"""CyberLancer API -- FastAPI application entrypoint.
 
 Assembles routers, middleware, and lifecycle hooks into a single
 ASGI application served by Uvicorn.
@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
 from backend.database import db
-from backend.routers import assistant, health, logs, osint, recon, reports, settings as settings_router, stats, threat, vuln, websocket
+from backend.routers import assistant, exploit, health, logs, osint, recon, reports, seek_enter, settings as settings_router, stats, threat, vuln, websocket
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +33,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         - Close the database connection cleanly.
     """
     # -- Startup --
-    logger.info("CyberForge API starting up")
+    logger.info("CyberLancer API starting up")
     await db.init_db()
     logger.info("Database ready")
 
     yield
 
     # -- Shutdown --
-    logger.info("CyberForge API shutting down")
+    logger.info("CyberLancer API shutting down")
     await db.close()
     logger.info("Cleanup complete")
 
@@ -77,6 +77,8 @@ def create_app() -> FastAPI:
     app.include_router(logs.router, prefix="/api")
     app.include_router(stats.router, prefix="/api")
     app.include_router(reports.router, prefix="/api")
+    app.include_router(exploit.router, prefix="/api")
+    app.include_router(seek_enter.router, prefix="/api")
     app.include_router(settings_router.router)
     app.include_router(assistant.router)
     app.include_router(websocket.router)

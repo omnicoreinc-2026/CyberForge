@@ -16,7 +16,7 @@ from backend.database import db
 logger = logging.getLogger(__name__)
 
 # The keyring service namespace used for all CyberForge keys.
-_KEYRING_SERVICE = "cyberforge"
+_KEYRING_SERVICE = "cyberlancer"
 
 # Supported third-party services.
 SUPPORTED_SERVICES = frozenset({
